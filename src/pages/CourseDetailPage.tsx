@@ -134,7 +134,14 @@ export const CourseDetailPage: React.FC = () => {
           bio: 'Professional nail artist and educator with over 8 years of experience in acrylic nail application. Avané specializes in teaching proper techniques, safety protocols, and helping students build confidence in their nail artistry skills.',
           location: '34 Horingbek Avenue, Helikonpark, Randfontein, Gauteng',
           email: 'shopblomcosmetics@gmail.com',
-          phone: '+27 79 548 3317'
+          phone: '+27 79 548 3317',
+          availableDates: [
+            '26–30 January 2027',
+            '6–10 April 2027',
+            '9–13 July 2027',
+            '22–26 August 2027',
+            '1–5 November 2027'
+          ]
         },
         {
           name: 'Yolanda Botha',
@@ -240,7 +247,12 @@ export const CourseDetailPage: React.FC = () => {
         }
       ],
       availableDates: [
-        'August/September 2026 (28 Aug-1 Sep)'
+        'August/September 2026 (28 Aug-1 Sep)',
+        '26–30 January 2027',
+        '6–10 April 2027',
+        '9–13 July 2027',
+        '22–26 August 2027',
+        '1–5 November 2027'
       ],
       thingsToBring: [
         'Your own refreshments and lunch (coffee and tea will be provided daily)',
@@ -335,7 +347,11 @@ export const CourseDetailPage: React.FC = () => {
           availableDates: [
             'July 2026 (4–6 Jul)',
             'September 2026 (26–28 Sep)',
-            'November 2026 (5–7 Nov)'
+            'November 2026 (5–7 Nov)',
+            '1–3 March 2027',
+            '7–9 June 2027',
+            '27–29 September 2027',
+            '29 November–1 December 2027'
           ],
           trainingSchedule: [
             {
@@ -448,7 +464,11 @@ export const CourseDetailPage: React.FC = () => {
       availableDates: [
         'July 2026 (4–6 Jul)',
         'September 2026 (26–28 Sep)',
-        'November 2026 (5–7 Nov)'
+        'November 2026 (5–7 Nov)',
+        '1–3 March 2027',
+        '7–9 June 2027',
+        '27–29 September 2027',
+        '29 November–1 December 2027'
       ],
       thingsToBring: [
         'Your own refreshments and lunch (Coffee & tea provided daily)',
@@ -638,7 +658,9 @@ export const CourseDetailPage: React.FC = () => {
           email: 'shopblomcosmetics@gmail.com',
           phone: '+27 79 548 3317',
           availableDates: [
-            'Tuesday, 29 September 2026'
+            'Tuesday, 29 September 2026',
+            '8 March 2027',
+            '5 July 2027'
           ],
           trainingSchedule: []
         }
@@ -661,7 +683,9 @@ export const CourseDetailPage: React.FC = () => {
         }
       ],
       availableDates: [
-        'Tuesday, 29 September 2026'
+        'Tuesday, 29 September 2026',
+        '8 March 2027',
+        '5 July 2027'
       ],
       thingsToBring: [],
       trainingSchedule: [],
