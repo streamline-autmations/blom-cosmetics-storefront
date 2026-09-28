@@ -5,6 +5,7 @@ import { Footer } from '../components/layout/Footer';
 import { Container } from '../components/layout/Container';
 import { ClickableContact } from '../components/ui/ClickableContact';
 import { ScrollableTabRow } from '../components/ui/ScrollableTabRow';
+import { CourseReviews, type StaticCourseReview } from '../components/course/CourseReviews';
 import { supabase } from '../lib/supabase';
 import { getAffiliateRef } from '../lib/affiliate';
 import { 
@@ -20,10 +21,7 @@ import {
   Mail,
   Shield,
   CreditCard,
-  X,
-  Star,
-  BadgeCheck,
-  Quote
+  X
 } from 'lucide-react';
 
 /**
@@ -1128,21 +1126,16 @@ export const CourseDetailPage: React.FC = () => {
   const course = courses[courseSlug as keyof typeof courses] || courses['professional-acrylic-training'];
   const depositAmount = !course.isOnline ? (course.depositAmount ?? 1800) : 0;
 
-  // Verified student reviews — currently only the Professional Acrylic Training course.
-  const courseReviews: Record<string, Array<{
-    name: string;
-    initials: string;
-    rating: number;
-    courseTaken: string;
-    date: string;
-    body: string[];
-  }>> = {
+  // Verified student reviews collected before the review form existed. Live reviews
+  // submitted on the site are loaded by <CourseReviews /> from the course_reviews table.
+  const courseReviews: Record<string, StaticCourseReview[]> = {
     'professional-acrylic-training': [
       {
         name: 'Bebruchka',
         initials: 'B',
         rating: 5,
         courseTaken: '5-Day Acrylic Nail Course',
+        instructorName: 'Avané Crous',
         date: 'March 2026',
         body: [
           "I recently completed the 5-day Acrylic Nail Course at Blom Cosmetics, and I can honestly say it was one of the best investments I've made in my nail career.",
@@ -1157,6 +1150,7 @@ export const CourseDetailPage: React.FC = () => {
         initials: 'R',
         rating: 5,
         courseTaken: '5-Day Acrylic Nail Course',
+        instructorName: 'Avané Crous',
         date: 'April 2026',
         body: [
           "I just want to leave a little review on my recent nail training, and I couldn't be happier with the experience!",
@@ -1168,10 +1162,6 @@ export const CourseDetailPage: React.FC = () => {
       }
     ]
   };
-  const reviews = courseReviews[courseSlug] ?? [];
-  const averageRating = reviews.length
-    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-    : 0;
   const [expandedAccordion, setExpandedAccordion] = useState<number | null>(0);
   const [selectedPackage, setSelectedPackage] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -1179,19 +1169,6 @@ export const CourseDetailPage: React.FC = () => {
   const [selectedInstructorIndex, setSelectedInstructorIndex] = useState<number>(0);
   const [showComparePackages, setShowComparePackages] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-  const [expandedReviews, setExpandedReviews] = useState<Set<number>>(new Set());
-
-  const toggleReview = (index: number) => {
-    setExpandedReviews((prev) => {
-      const next = new Set(prev);
-      if (next.has(index)) {
-        next.delete(index);
-      } else {
-        next.add(index);
-      }
-      return next;
-    });
-  };
 
   // Initialize selectedInstructor with first instructor on mount
   useEffect(() => {
@@ -2171,104 +2148,14 @@ export const CourseDetailPage: React.FC = () => {
           </Container>
         </section>
 
-        {/* Student Reviews */}
-        {reviews.length > 0 && (
-          <section className="py-20" style={{ background: 'linear-gradient(135deg, #FFE8F0 0%, #FFF0F6 50%, #FFE8F0 100%)' }}>
-            <Container>
-              <div className="max-w-5xl mx-auto">
-                <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 uppercase tracking-wide text-gray-900">
-                  Student Reviews
-                </h2>
-                <div className="w-20 h-1 bg-pink-400 mx-auto mb-6 rounded-full"></div>
-
-                {/* Aggregate rating */}
-                <div className="flex flex-col items-center justify-center gap-2 mb-12">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star
-                        key={i}
-                        className="h-6 w-6"
-                        style={{ fill: i <= Math.round(averageRating) ? '#FBBF24' : 'transparent', color: '#FBBF24' }}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-gray-800 font-semibold">
-                    <span className="text-2xl font-bold text-gray-900">{averageRating.toFixed(1)}</span>
-                    <span className="text-gray-500"> / 5.0</span>
-                  </p>
-                  <p className="text-sm text-gray-600 flex items-center gap-1.5">
-                    <BadgeCheck className="h-4 w-4 text-pink-400" />
-                    Based on real, verified student reviews
-                  </p>
-                </div>
-
-                {/* Review cards */}
-                <div className="grid md:grid-cols-2 gap-8">
-                  {reviews.map((review, index) => (
-                    <div
-                      key={index}
-                      className="relative bg-white rounded-3xl p-8 md:p-10 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex flex-col"
-                    >
-                      <Quote className="absolute top-6 right-6 h-10 w-10 text-pink-100" />
-
-                      {/* Header: avatar + name + verified */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="w-14 h-14 flex-shrink-0 rounded-full flex items-center justify-center text-xl font-bold text-white shadow-md" style={{ background: 'linear-gradient(135deg, #FF74A4 0%, #FF9CC0 100%)' }}>
-                          {review.initials}
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-lg font-bold text-gray-900">{review.name}</h3>
-                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">
-                              <BadgeCheck className="h-3.5 w-3.5" />
-                              Verified Student
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-500">{review.courseTaken} · {review.date}</p>
-                        </div>
-                      </div>
-
-                      {/* Stars */}
-                      <div className="flex items-center gap-1 mb-4">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <Star
-                            key={i}
-                            className="h-5 w-5"
-                            style={{ fill: i <= review.rating ? '#FBBF24' : 'transparent', color: '#FBBF24' }}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Body */}
-                      {expandedReviews.has(index) ? (
-                        <div className="space-y-3 text-gray-700 leading-relaxed text-[15px]">
-                          {review.body.map((paragraph, pIndex) => (
-                            <p key={pIndex}>{paragraph}</p>
-                          ))}
-                        </div>
-                      ) : (
-                        <p
-                          className="text-gray-700 leading-relaxed text-[15px]"
-                          style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
-                        >
-                          {review.body.join(' ')}
-                        </p>
-                      )}
-
-                      {/* Read more / less */}
-                      <button
-                        type="button"
-                        onClick={() => toggleReview(index)}
-                        className="mt-4 self-start text-sm font-semibold text-pink-500 hover:text-pink-600 transition-colors"
-                      >
-                        {expandedReviews.has(index) ? 'Read less' : 'Read more'}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </Container>
-          </section>
+        {/* Student Reviews - in-person courses only, each linked to an instructor */}
+        {!course.isOnline && (
+          <CourseReviews
+            courseSlug={courseSlug}
+            courseTitle={course.title}
+            instructors={course.instructors?.length ? course.instructors : [course.instructor]}
+            staticReviews={courseReviews[courseSlug] ?? []}
+          />
         )}
 
         {/* Booking Form */}
