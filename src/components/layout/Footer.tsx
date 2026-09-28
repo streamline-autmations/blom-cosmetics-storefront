@@ -97,7 +97,13 @@ export const Footer: React.FC = () => {
         <div className="footer-bottom-content">
           <p>© <span id="year" /> BLOM Cosmetics. All rights reserved.</p>
           <p className="footer-designer">
-            Designed by <a href="https://streamline-automations.co.za/" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">Streamline Automation</a>
+            Designed by <a
+              href="https://streamline-automations.co.za/?utm_source=blom-cosmetics&utm_medium=referral&utm_campaign=footer-credit"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-pink-500 transition-colors"
+              onClick={() => (window as any).gtag?.('event', 'designed_by_click', { link_url: 'https://streamline-automations.co.za/', transport_type: 'beacon' })}
+            >Streamline Automation</a>
           </p>
         </div>
         <nav className="footer-legal" aria-label="Legal links">
