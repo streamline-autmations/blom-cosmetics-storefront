@@ -97,7 +97,7 @@ export const Footer: React.FC = () => {
         <div className="footer-bottom-content">
           <p>© <span id="year" /> BLOM Cosmetics. All rights reserved.</p>
           <p className="footer-designer">
-            Designed by <a href="https://streamline-automations.agency/" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">Streamline Automation</a>
+            Designed by <a href="https://streamline-automations.co.za/" target="_blank" rel="noopener noreferrer" className="hover:text-pink-500 transition-colors">Streamline Automation</a>
           </p>
         </div>
         <nav className="footer-legal" aria-label="Legal links">
