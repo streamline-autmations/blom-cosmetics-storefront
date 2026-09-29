@@ -175,11 +175,13 @@ export const CourseDetailPage: React.FC = () => {
           name: 'Natasha Du Toit',
           image: 'https://res.cloudinary.com/wbmx31qv/image/upload/v1789373472/ChatGPT_Image_Sep_14_2026_10_11_00_AM.png',
           bio: 'Our Pretoria, Gauteng Area Mentor. Natasha brings passion, knowledge and a love for the nail industry, and specialises in helping students master acrylics with confidence.',
-          location: 'Pretoria, Gauteng',
+          location: '3 Kiepersol Road, Eldoraigne, Centurion, 0157',
           email: 'natashatooshterblanche@gmail.com',
           phone: '0714625287',
           availableDates: [
-            '5–9 October 2026'
+            '5–9 October 2026',
+            '2–6 November 2026',
+            '7–11 December 2026'
           ],
           // Empty array hides the timetable card; omitting it would fall back to
           // the studio-wide August/September block.
@@ -396,6 +398,22 @@ export const CourseDetailPage: React.FC = () => {
             '1–3 December 2026',
             '16–18 March 2027'
           ]
+        },
+        {
+          name: 'Natasha Du Toit',
+          image: 'https://res.cloudinary.com/wbmx31qv/image/upload/v1789373472/ChatGPT_Image_Sep_14_2026_10_11_00_AM.png',
+          bio: 'Our Pretoria, Gauteng Area Mentor. Natasha brings passion, knowledge and a love for the nail industry, and specialises in rubber base systems and Russian manicure techniques.',
+          location: '3 Kiepersol Road, Eldoraigne, Centurion, 0157',
+          email: 'natashatooshterblanche@gmail.com',
+          phone: '0714625287',
+          availableDates: [
+            '19–21 October 2026',
+            '18–20 November 2026',
+            '1–3 December 2026'
+          ],
+          // Empty array hides the timetable card; omitting it would fall back to
+          // the course-wide block.
+          trainingSchedule: []
         }
       ],
       about: [

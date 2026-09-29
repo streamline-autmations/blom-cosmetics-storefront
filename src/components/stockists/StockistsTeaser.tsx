@@ -16,8 +16,8 @@ export const StockistsTeaser: React.FC = () => {
           <div>
             <h2 className="heading-with-stripe">Find BLOM Near You</h2>
             <p className="text-gray-600 leading-relaxed mb-6">
-              From our home base in Randfontein to trusted distributors in the Free State and
-              North West, BLOM is growing across South Africa.
+              From our home base in Randfontein to trusted distributors across Gauteng, the
+              Free State and North West, BLOM is growing across South Africa.
             </p>
             <ul className="space-y-2 mb-6">
               {stockists.map((stockist) => (

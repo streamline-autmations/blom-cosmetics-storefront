@@ -59,6 +59,19 @@ export const stockists: Stockist[] = [
     email: 'blom.orkney.northwest@gmail.com'
   },
   {
+    id: 'blom-centurion',
+    name: 'BLOM Centurion',
+    kind: 'distributor',
+    town: 'Centurion',
+    addressLines: ['3 Kiepersol Road', 'Eldoraigne, Centurion, 0157'],
+    fullAddress: '3 Kiepersol Road, Eldoraigne, Centurion, 0157, South Africa',
+    lat: -25.8446,
+    lng: 28.1514,
+    contactName: 'Natasha Du Toit',
+    phone: '+27 71 462 5287',
+    email: 'natashatooshterblanche@gmail.com'
+  },
+  {
     id: 'lesinda-meyer-vanderbijlpark',
     name: 'BLOM Vanderbijlpark',
     kind: 'distributor',
