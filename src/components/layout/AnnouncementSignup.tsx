@@ -363,7 +363,7 @@ const SignupForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
       <button
         type="submit"
         disabled={submitting}
-        className="w-full bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        className="w-full bg-pink-400 hover:bg-pink-400 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
       >
         {submitting ? 'Joining...' : 'Join Now & Save R100'}
       </button>

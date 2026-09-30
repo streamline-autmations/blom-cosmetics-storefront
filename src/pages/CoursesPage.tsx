@@ -215,7 +215,7 @@ const CoursesPage: React.FC = () => {
 
                     <button
                       onClick={() => window.location.href = `/courses/${course.slug}`}
-                      className="w-full bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                      className="w-full bg-pink-400 hover:bg-pink-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
                     >
                       SEE MORE DETAILS
                     </button>
@@ -285,7 +285,7 @@ const CoursesPage: React.FC = () => {
 
                     <button
                       onClick={() => window.location.href = `/courses/${course.slug}`}
-                      className="w-full bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                      className="w-full bg-pink-400 hover:bg-pink-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
                     >
                       SEE MORE DETAILS
                     </button>

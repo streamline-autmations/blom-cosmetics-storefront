@@ -198,7 +198,7 @@ export const ResetPasswordPage: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={!isFormValid || isSubmitting}
-                    className="w-full bg-pink-400 hover:bg-pink-500 text-[#1a1a1a] font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-pink-400 hover:bg-pink-500 text-white font-medium py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {isSubmitting ? 'Updating Password...' : 'Update Password'}
                   </Button>

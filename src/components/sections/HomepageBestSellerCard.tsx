@@ -141,7 +141,7 @@ export const HomepageBestSellerCard: React.FC<HomepageBestSellerCardProps> = ({
             {badges.map((badge, index) => (
               <span
                 key={index}
-                className="inline-block bg-pink-400 text-[#1a1a1a] text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide"
+                className="inline-block bg-pink-400 text-white text-xs font-bold px-2 py-1 rounded-full uppercase tracking-wide"
               >
                 {badge}
               </span>
@@ -186,7 +186,7 @@ export const HomepageBestSellerCard: React.FC<HomepageBestSellerCardProps> = ({
 
         <button
           onClick={handleAddToCart}
-          className="w-full bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-semibold py-3 px-4 rounded-full transition-all duration-300 ease-out hover:-translate-y-[1px] hover:shadow-[0_6px_20px_rgba(255,116,164,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+          className="w-full bg-pink-400 hover:bg-pink-400 text-white font-semibold py-3 px-4 rounded-full transition-all duration-300 ease-out hover:-translate-y-[1px] hover:shadow-[0_6px_20px_rgba(255,116,164,0.4)] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
           disabled={!inStock}
         >
           {inStock ? 'Add to Cart' : 'Out of Stock'}

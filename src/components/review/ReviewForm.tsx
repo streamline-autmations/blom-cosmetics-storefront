@@ -325,7 +325,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
             type="submit"
             disabled={isSubmitting}
             onClick={handleSubmit}
-            className="bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-semibold px-6 md:px-8 py-2 md:py-3 rounded-lg md:rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-full sm:w-auto text-sm md:text-base"
+            className="bg-pink-400 hover:bg-pink-400 text-white font-semibold px-6 md:px-8 py-2 md:py-3 rounded-lg md:rounded-xl transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none w-full sm:w-auto text-sm md:text-base"
           >
             {isSubmitting ? (
               <div className="flex items-center gap-2">

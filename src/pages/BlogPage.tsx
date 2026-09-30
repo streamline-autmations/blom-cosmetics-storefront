@@ -479,7 +479,7 @@ export const BlogPage: React.FC = () => {
                           onClick={() => setSelectedTag(tag)}
                           className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
                             selectedTag === tag
-                              ? 'bg-pink-400 text-[#1a1a1a]'
+                              ? 'bg-pink-400 text-white'
                               : 'bg-white text-gray-600 hover:bg-pink-100 hover:text-pink-600'
                           }`}
                         >

@@ -166,7 +166,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   }
                 }}
                 disabled={price === -1 || !inStock}
-                className="bg-pink-500 text-[#1a1a1a] px-6 py-2 rounded-full text-sm font-bold hover:bg-pink-600 transition-colors whitespace-nowrap shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
+                className="bg-pink-500 text-white px-6 py-2 rounded-full text-sm font-bold hover:bg-pink-600 transition-colors whitespace-nowrap shadow-md disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed"
               >
                 {price === -1 ? 'Coming Soon' : !inStock ? 'Sold Out' : hasVariants ? 'Select' : 'Add'}
               </button>
@@ -244,7 +244,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   }
                 }}
                 disabled={price === -1 || !inStock}
-                className="w-9 h-9 rounded-full bg-pink-500 text-[#1a1a1a] flex items-center justify-center shadow-md shadow-pink-200 hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-9 h-9 rounded-full bg-pink-500 text-white flex items-center justify-center shadow-md shadow-pink-200 hover:bg-pink-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={price === -1 ? 'Coming soon' : !inStock ? 'Sold out' : hasVariants ? 'Select options' : 'Add to cart'}
               >
                 <Plus className="w-4 h-4" />
@@ -344,7 +344,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 }
               }}
               disabled={price === -1 || !inStock}
-              className="w-full bg-pink-500 text-[#1a1a1a] font-bold py-3.5 md:py-3 px-4 rounded-full shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-pink-300 hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed text-xs md:text-sm"
+              className="w-full bg-pink-500 text-white font-bold py-3.5 md:py-3 px-4 rounded-full shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-pink-300 hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 disabled:bg-gray-300 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed text-xs md:text-sm"
             >
               <Plus className="w-5 h-5" />
               <span>{price === -1 ? 'Coming Soon' : !inStock ? 'Sold Out' : hasVariants ? 'Select Options' : 'Add to Cart'}</span>

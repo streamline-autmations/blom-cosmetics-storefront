@@ -503,7 +503,7 @@ button {
   .btn-primary:active { transform: translateY(0); filter: brightness(.98); }
 
   /* Pink solid convenience */
-  .btn-pink { background: #FF74A4; color: #1a1a1a; box-shadow: 0 4px 15px rgba(255,116,164,.30); border-radius: 9999px; }
+  .btn-pink { background: #FF74A4; color: #fff; box-shadow: 0 4px 15px rgba(255,116,164,.30); border-radius: 9999px; }
   .btn-pink:hover { background: transparent; color: #000; border: 2px solid #000; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,116,164,.20); }
 
   /* Secondary outline (black) */

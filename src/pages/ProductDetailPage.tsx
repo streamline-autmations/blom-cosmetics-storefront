@@ -706,7 +706,7 @@ export const ProductDetailPage: React.FC = () => {
           <Container>
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
             <p className="text-gray-600 mb-8">The product you are looking for does not exist or has been moved.</p>
-            <Link to={shopLinkTarget} className="inline-block bg-pink-400 text-[#1a1a1a] px-8 py-3 rounded-full hover:bg-pink-500 transition-colors">
+            <Link to={shopLinkTarget} className="inline-block bg-pink-400 text-white px-8 py-3 rounded-full hover:bg-pink-500 transition-colors">
               Back to Shop
             </Link>
           </Container>
@@ -913,7 +913,7 @@ export const ProductDetailPage: React.FC = () => {
                           className={`
                             px-4 py-2 rounded-full text-sm font-medium transition-all
                             ${isSelected
-                              ? 'bg-pink-500 text-[#1a1a1a] shadow-lg shadow-pink-200'
+                              ? 'bg-pink-500 text-white shadow-lg shadow-pink-200'
                               : isVariantOutOfStock
                               ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
                               : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-pink-300 hover:bg-pink-50'
@@ -1003,7 +1003,7 @@ export const ProductDetailPage: React.FC = () => {
                       w-full sm:flex-1 h-16 sm:h-12 font-bold rounded-full uppercase transition-all flex items-center justify-center gap-2 text-base sm:text-sm px-6
                       ${(product.price === -1 || isProductOutOfStock)
                         ? 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'
-                        : 'bg-pink-500 text-[#1a1a1a] shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-xl hover:shadow-pink-300 hover:scale-[1.02] active:scale-95'
+                        : 'bg-pink-500 text-white shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-xl hover:shadow-pink-300 hover:scale-[1.02] active:scale-95'
                       }
                     `}
                   >

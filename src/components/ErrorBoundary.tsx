@@ -54,7 +54,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={this.handleReset}
-                  className="flex items-center gap-2 px-6 py-3 bg-pink-400 text-[#1a1a1a] rounded-lg hover:bg-pink-500 transition-colors font-medium"
+                  className="flex items-center gap-2 px-6 py-3 bg-pink-400 text-white rounded-lg hover:bg-pink-500 transition-colors font-medium"
                 >
                   <Home className="h-4 w-4" />
                   Go Home

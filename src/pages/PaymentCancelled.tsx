@@ -18,7 +18,7 @@ export default function PaymentCancelled() {
                 <p className="text-gray-600 mb-6">Something went wrong or you cancelled the payment.</p>
 
                 <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                  <a href="/checkout" className="inline-flex justify-center rounded-full bg-pink-500 px-6 py-3 text-[#1a1a1a] font-semibold shadow hover:bg-pink-600 transition-colors">Try Again</a>
+                  <a href="/checkout" className="inline-flex justify-center rounded-full bg-pink-500 px-6 py-3 text-white font-semibold shadow hover:bg-pink-600 transition-colors">Try Again</a>
                   <a href="mailto:shopblomcosmetics@gmail.com" className="inline-flex justify-center rounded-full border border-gray-300 px-6 py-3 text-gray-700 font-semibold hover:bg-gray-50 transition-colors">Contact Support</a>
                 </div>
 

@@ -1054,7 +1054,7 @@ export const CheckoutPage: React.FC = () => {
               {/* Step 1 */}
               <div className="flex flex-col items-center">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step === 'shipping' ? 'bg-pink-500 text-[#1a1a1a] ring-4 ring-pink-100' :
+                  step === 'shipping' ? 'bg-pink-500 text-white ring-4 ring-pink-100' :
                   step === 'review' ? 'bg-gray-900 text-white' : 'bg-gray-200 text-gray-400'
                 }`}>
                   {step === 'review' ? (
@@ -1080,7 +1080,7 @@ export const CheckoutPage: React.FC = () => {
               {/* Step 2 */}
               <div className="flex flex-col items-center">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
-                  step === 'review' ? 'bg-pink-500 text-[#1a1a1a] ring-4 ring-pink-100' : 'bg-gray-200 text-gray-400'
+                  step === 'review' ? 'bg-pink-500 text-white ring-4 ring-pink-100' : 'bg-gray-200 text-gray-400'
                 }`}>
                   2
                 </div>
@@ -1761,7 +1761,7 @@ export const CheckoutPage: React.FC = () => {
                             type="button"
                             onClick={() => void handleApplyCoupon()}
                             disabled={isApplyingCoupon || !couponCode.trim()}
-                            className="px-4 py-2 bg-pink-400 text-[#1a1a1a] rounded-lg text-sm font-medium hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-4 py-2 bg-pink-400 text-white rounded-lg text-sm font-medium hover:bg-pink-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             {isApplyingCoupon ? 'Applying...' : 'Apply'}
                           </button>
@@ -1924,7 +1924,7 @@ export const CheckoutPage: React.FC = () => {
 
                     <button
                       onClick={() => handleAddRecommendedProduct(product)}
-                      className="w-full bg-pink-500 text-[#1a1a1a] px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-xl hover:shadow-pink-300 hover:scale-[1.02] active:scale-95"
+                      className="w-full bg-pink-500 text-white px-6 py-2.5 rounded-full font-medium transition-all shadow-lg shadow-pink-200 hover:bg-pink-600 hover:shadow-xl hover:shadow-pink-300 hover:scale-[1.02] active:scale-95"
                     >
                       Add to Cart
                     </button>

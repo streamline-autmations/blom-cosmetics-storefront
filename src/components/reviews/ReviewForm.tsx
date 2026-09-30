@@ -114,7 +114,7 @@ export function ReviewForm({ productSlug, product }: ReviewFormProps) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-[#1a1a1a] transition-all duration-200 bg-pink-400 hover:bg-pink-500 hover:shadow-lg hover:shadow-pink-400/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
+        className="inline-flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-white transition-all duration-200 bg-pink-400 hover:bg-pink-500 hover:shadow-lg hover:shadow-pink-400/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2"
       >
         <StarIcon className="w-4 h-4" />
         Write a Review
@@ -370,7 +370,7 @@ export function ReviewForm({ productSlug, product }: ReviewFormProps) {
                   <button
                     type="submit"
                     disabled={status === 'saving' || status === 'done'}
-                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-[#1a1a1a] transition-all duration-200 bg-pink-400 hover:bg-pink-500 hover:shadow-lg hover:shadow-pink-400/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-semibold text-white transition-all duration-200 bg-pink-400 hover:bg-pink-500 hover:shadow-lg hover:shadow-pink-400/50 active:scale-95 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
                   >
                     {status === 'saving' ? (
                       <>

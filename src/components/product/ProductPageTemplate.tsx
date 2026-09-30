@@ -333,7 +333,7 @@ export const ProductPageTemplate: React.FC<ProductPageTemplateProps> = ({ produc
                           onClick={() => setSelectedVariant(variant)}
                           className={`px-6 py-3 rounded-full font-medium text-sm transition-all duration-200 ${
                             selectedVariant === variant
-                              ? 'bg-pink-400 text-[#1a1a1a] border-2 border-pink-400 shadow-md'
+                              ? 'bg-pink-400 text-white border-2 border-pink-400 shadow-md'
                               : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-gray-400'
                           }`}
                         >
@@ -370,7 +370,7 @@ export const ProductPageTemplate: React.FC<ProductPageTemplateProps> = ({ produc
                 <div className="space-y-3 mb-8">
                   <button
                     onClick={handleAddToCart}
-                    className="w-full bg-pink-400 text-[#1a1a1a] rounded-full py-3 md:py-4 px-6 md:px-8 font-bold text-sm md:text-lg uppercase tracking-wide hover:bg-transparent hover:text-black hover:border-2 hover:border-black transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
+                    className="w-full bg-pink-400 text-white rounded-full py-3 md:py-4 px-6 md:px-8 font-bold text-sm md:text-lg uppercase tracking-wide hover:bg-transparent hover:text-black hover:border-2 hover:border-black transition-all duration-200 shadow-lg hover:shadow-xl active:scale-95"
                   >
                     ADD TO CART
                   </button>
@@ -548,7 +548,7 @@ export const ProductPageTemplate: React.FC<ProductPageTemplateProps> = ({ produc
                 Have questions about this product? Our nail experts are here to help you choose the perfect products for your needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="bg-pink-400 hover:bg-transparent text-[#1a1a1a] hover:text-black font-bold py-3 px-8 rounded-full transition-all duration-300 border-2 border-transparent hover:border-black w-full sm:w-auto">
+                <Button size="lg" className="bg-pink-400 hover:bg-transparent text-white hover:text-black font-bold py-3 px-8 rounded-full transition-all duration-300 border-2 border-transparent hover:border-black w-full sm:w-auto">
                   <span className="text-sm sm:text-base">WhatsApp Support</span>
                   <MessageCircle className="h-4 w-4 sm:h-5 sm:w-5 ml-2" />
                 </Button>

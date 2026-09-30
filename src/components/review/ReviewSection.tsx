@@ -166,7 +166,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
               onClick={() => setSelectedRating(null)}
               className={`px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                 selectedRating === null
-                  ? 'bg-pink-400 text-[#1a1a1a]'
+                  ? 'bg-pink-400 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
@@ -178,7 +178,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
                 onClick={() => setSelectedRating(star)}
                 className={`px-3 py-2 md:px-4 md:py-2 rounded-full text-xs md:text-sm font-medium transition-all ${
                   selectedRating === star
-                    ? 'bg-pink-400 text-[#1a1a1a]'
+                    ? 'bg-pink-400 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
@@ -261,7 +261,7 @@ export const ReviewSection: React.FC<ReviewSectionProps> = ({
               <p className="text-gray-600 mb-6 text-sm md:text-base">Be the first to share your experience with this product!</p>
               <Button
                 onClick={() => setShowReviewForm(true)}
-                className="bg-pink-400 hover:bg-pink-400 text-[#1a1a1a] font-semibold px-6 py-3 rounded-xl text-sm md:text-base"
+                className="bg-pink-400 hover:bg-pink-400 text-white font-semibold px-6 py-3 rounded-xl text-sm md:text-base"
               >
                 Write the First Review
               </Button>

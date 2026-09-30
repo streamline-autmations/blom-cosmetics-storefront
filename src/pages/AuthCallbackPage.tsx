@@ -112,7 +112,7 @@ export const AuthCallbackPage: React.FC = () => {
                 <div className="space-y-3">
                   <Button 
                     onClick={() => window.location.href = '/login'}
-                    className="w-full bg-pink-400 hover:bg-pink-500 text-[#1a1a1a]"
+                    className="w-full bg-pink-400 hover:bg-pink-500 text-white"
                   >
                     Back to Login
                   </Button>
@@ -131,7 +131,7 @@ export const AuthCallbackPage: React.FC = () => {
                   <p>You will be redirected automatically...</p>
                   <Button 
                     onClick={() => window.location.href = '/account'}
-                    className="mt-4 bg-pink-400 hover:bg-pink-500 text-[#1a1a1a]"
+                    className="mt-4 bg-pink-400 hover:bg-pink-500 text-white"
                   >
                     Go to Account Now
                   </Button>

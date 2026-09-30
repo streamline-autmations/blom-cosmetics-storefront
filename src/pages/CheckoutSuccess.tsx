@@ -174,7 +174,7 @@ export default function CheckoutSuccess() {
                       <Button onClick={downloadReceipt} disabled={loading} variant="outline" className="gap-2">
                           <Download className="h-4 w-4" /> {loading ? 'Generating...' : 'Download Receipt'}
                       </Button>
-                      <Button onClick={() => window.location.href = '/shop'} className="bg-pink-500 hover:bg-pink-600 text-[#1a1a1a]">
+                      <Button onClick={() => window.location.href = '/shop'} className="bg-pink-500 hover:bg-pink-600 text-white">
                           Continue Shopping
                       </Button>
                     </div>

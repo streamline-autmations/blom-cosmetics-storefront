@@ -193,7 +193,7 @@ export const BirthdayBundlePopup: React.FC = () => {
 
             <button
               onClick={goToBundle}
-              className="w-full bg-pink-400 hover:bg-pink-500 text-[#1a1a1a] font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
+              className="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
             >
               Shop the Bundle
             </button>

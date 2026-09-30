@@ -659,7 +659,7 @@ export const ShopPage: React.FC = () => {
                   onClick={() => setSelectedCategory(category.slug)}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
                     selectedCategory === category.slug
-                      ? 'bg-pink-400 text-[#1a1a1a] shadow-md'
+                      ? 'bg-pink-400 text-white shadow-md'
                       : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                   }`}
                 >
@@ -1034,7 +1034,7 @@ export const ShopPage: React.FC = () => {
             <div className="p-4 border-t border-gray-100">
               <button 
                 onClick={() => setShowFilters(false)}
-                className="w-full bg-pink-500 hover:bg-pink-600 text-[#1a1a1a] py-3 uppercase tracking-widest text-sm font-bold transition-colors"
+                className="w-full bg-pink-500 hover:bg-pink-600 text-white py-3 uppercase tracking-widest text-sm font-bold transition-colors"
               >
                 View Results
               </button>

@@ -172,7 +172,7 @@ export const LockerPicker: React.FC<LockerPickerProps> = ({
             onClick={() => setTypeFilter('all')}
             className={`px-3 py-1 text-sm rounded-full border ${
               typeFilter === 'all' 
-                ? 'bg-pink-400 text-[#1a1a1a] border-pink-400' 
+                ? 'bg-pink-400 text-white border-pink-400' 
                 : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
             }`}
           >
@@ -182,7 +182,7 @@ export const LockerPicker: React.FC<LockerPickerProps> = ({
             onClick={() => setTypeFilter('locker')}
             className={`px-3 py-1 text-sm rounded-full border ${
               typeFilter === 'locker' 
-                ? 'bg-pink-400 text-[#1a1a1a] border-pink-400' 
+                ? 'bg-pink-400 text-white border-pink-400' 
                 : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
             }`}
           >
@@ -192,7 +192,7 @@ export const LockerPicker: React.FC<LockerPickerProps> = ({
             onClick={() => setTypeFilter('counter')}
             className={`px-3 py-1 text-sm rounded-full border ${
               typeFilter === 'counter' 
-                ? 'bg-pink-400 text-[#1a1a1a] border-pink-400' 
+                ? 'bg-pink-400 text-white border-pink-400' 
                 : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
             }`}
           >

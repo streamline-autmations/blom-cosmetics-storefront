@@ -121,7 +121,7 @@ export const BackInStockPopup: React.FC = () => {
             className="absolute inset-0 w-full h-full object-cover object-center"
             loading="lazy"
           />
-          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-pink-500 text-[#1a1a1a] text-[11px] md:text-xs font-bold uppercase tracking-wide px-2.5 py-1 md:px-3 md:py-1.5 rounded-full shadow">
+          <span className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-pink-500 text-white text-[11px] md:text-xs font-bold uppercase tracking-wide px-2.5 py-1 md:px-3 md:py-1.5 rounded-full shadow">
             <Sparkles className="w-3.5 h-3.5" /> New Gel System
           </span>
         </div>
@@ -162,7 +162,7 @@ export const BackInStockPopup: React.FC = () => {
 
             <button
               onClick={goToGelSystem}
-              className="w-full bg-pink-400 hover:bg-pink-500 text-[#1a1a1a] font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
+              className="w-full bg-pink-400 hover:bg-pink-500 text-white font-bold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02]"
             >
               Shop the Gel System
             </button>

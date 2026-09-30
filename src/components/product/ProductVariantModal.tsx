@@ -188,7 +188,7 @@ export const ProductVariantModal: React.FC<ProductVariantModalProps> = ({
             className={`w-full px-6 py-3 rounded-full font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
               !selectedVariant || !selectedVariantInStock
                 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-pink-400 text-[#1a1a1a] hover:bg-pink-500'
+                : 'bg-pink-400 text-white hover:bg-pink-500'
             }`}
           >
             {loading ? (

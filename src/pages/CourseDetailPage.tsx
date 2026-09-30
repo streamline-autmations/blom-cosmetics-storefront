@@ -1596,7 +1596,7 @@ export const CourseDetailPage: React.FC = () => {
               {/* CTA Button */}
               <button
                 onClick={scrollToBooking}
-                className="bg-pink-400 hover:bg-transparent text-[#1a1a1a] hover:text-black font-bold py-5 px-12 rounded-full text-lg uppercase tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black"
+                className="bg-pink-400 hover:bg-transparent text-white hover:text-black font-bold py-5 px-12 rounded-full text-lg uppercase tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black"
                 style={{ boxShadow: '0 4px 15px rgba(255,116,164,0.3)' }}
               >
                 {course.isOnline ? 'Enroll Now' : 'Book Your Spot'}
@@ -1653,7 +1653,7 @@ export const CourseDetailPage: React.FC = () => {
                       aria-pressed={selectedInstructorIndex === idx}
                       className={`px-5 py-2.5 md:px-6 md:py-3 rounded-full font-semibold transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2 ${
                         selectedInstructorIndex === idx
-                          ? 'bg-pink-400 text-[#1a1a1a] shadow-lg'
+                          ? 'bg-pink-400 text-white shadow-lg'
                           : 'bg-white text-gray-700 border-2 border-gray-200 hover:border-pink-400'
                       }`}
                     >
@@ -1883,7 +1883,7 @@ export const CourseDetailPage: React.FC = () => {
                           setShowComparePackages(false);
                           scrollToBooking();
                         }}
-                        className="bg-pink-400 hover:bg-pink-500 text-[#1a1a1a] font-semibold py-3 px-6 rounded-full transition-colors"
+                        className="bg-pink-400 hover:bg-pink-500 text-white font-semibold py-3 px-6 rounded-full transition-colors"
                       >
                         Book Now
                       </button>
@@ -1931,7 +1931,7 @@ export const CourseDetailPage: React.FC = () => {
                     
                     <button
                       onClick={() => selectPackage(pkg.name)}
-                      className="w-full bg-pink-400 hover:bg-transparent text-[#1a1a1a] hover:text-black font-bold py-4 px-6 rounded-full text-lg uppercase tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black"
+                      className="w-full bg-pink-400 hover:bg-transparent text-white hover:text-black font-bold py-4 px-6 rounded-full text-lg uppercase tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black"
                       style={{ boxShadow: '0 4px 15px rgba(255,116,164,0.3)' }}
                     >
                       Choose {pkg.name}
@@ -2182,7 +2182,7 @@ export const CourseDetailPage: React.FC = () => {
             <div className="max-w-4xl mx-auto">
               <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
                 {/* Form Header */}
-    <div className="bg-pink-400 p-12 text-center text-[#1a1a1a] relative" style={{ background: 'linear-gradient(135deg, rgba(244,114,182,0.9) 0%, rgba(236,72,153,0.95) 100%)' }}>
+    <div className="bg-pink-400 p-12 text-center text-white relative" style={{ background: 'linear-gradient(135deg, rgba(244,114,182,0.9) 0%, rgba(236,72,153,0.95) 100%)' }}>
                   <h2 className="text-3xl md:text-4xl font-bold mb-3 uppercase tracking-wide" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
                     {course.isOnline ? 'Enroll Now' : 'Book Your Spot'}
                   </h2>
@@ -2462,7 +2462,7 @@ export const CourseDetailPage: React.FC = () => {
                       <button
                           type="submit"
                         disabled={isSubmitting || !selectedPackage || !selectedDate || !formData.terms}
-                        className="w-full bg-pink-400 hover:bg-transparent text-[#1a1a1a] hover:text-black font-bold py-4 sm:py-5 px-5 sm:px-6 rounded-full text-sm sm:text-lg uppercase tracking-normal sm:tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-pink-400 disabled:hover:text-[#1a1a1a] disabled:hover:border-transparent"
+                        className="w-full bg-pink-400 hover:bg-transparent text-white hover:text-black font-bold py-4 sm:py-5 px-5 sm:px-6 rounded-full text-sm sm:text-lg uppercase tracking-normal sm:tracking-wide transition-all duration-300 border-2 border-transparent hover:border-black disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-pink-400 disabled:hover:text-[#1a1a1a] disabled:hover:border-transparent"
                         style={{ boxShadow: '0 4px 15px rgba(255,116,164,0.3)' }}
                       >
                         {isSubmitting

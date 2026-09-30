@@ -75,7 +75,7 @@ export default function InvoiceViewer() {
                   <p className="text-gray-600 mb-6">{error}</p>
                   <a 
                     href={`/.netlify/functions/invoice-pdf?m_payment_id=${encodeURIComponent(orderId || 'BLOM-DEMO-ORDER')}&inline=1`}
-                    className="inline-flex items-center px-4 py-2 rounded-full font-semibold text-[#1a1a1a] transition-all bg-pink-400 hover:bg-pink-400 hover:shadow-lg active:scale-95 mr-3"
+                    className="inline-flex items-center px-4 py-2 rounded-full font-semibold text-white transition-all bg-pink-400 hover:bg-pink-400 hover:shadow-lg active:scale-95 mr-3"
                     target="_blank"
                     rel="noopener"
                   >
@@ -115,7 +115,7 @@ export default function InvoiceViewer() {
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={handleDownload}
-                      className="inline-flex items-center px-4 py-2 rounded-full font-semibold text-[#1a1a1a] transition-all bg-pink-400 hover:bg-pink-400 hover:shadow-lg active:scale-95"
+                      className="inline-flex items-center px-4 py-2 rounded-full font-semibold text-white transition-all bg-pink-400 hover:bg-pink-400 hover:shadow-lg active:scale-95"
                     >
                       <Download className="w-4 h-4 mr-2" />
                       Download PDF

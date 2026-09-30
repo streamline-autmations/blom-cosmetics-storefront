@@ -19,7 +19,7 @@ export const TrackOrderPage: React.FC = () => {
             </p>
             <a
               href="/shop"
-              className="inline-block px-6 py-2 rounded-md bg-pink-400 text-[#1a1a1a] hover:bg-pink-500 transition"
+              className="inline-block px-6 py-2 rounded-md bg-pink-400 text-white hover:bg-pink-500 transition"
             >
               Back to Shop
             </a>

@@ -204,7 +204,7 @@ export const AuthResetPage: React.FC = () => {
                   <Button
                     type="submit"
                     disabled={!isFormValid || isSubmitting || !isValidToken}
-                    className="w-full bg-pink-400 hover:bg-pink-500 text-[#1a1a1a] font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-pink-400 hover:bg-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center justify-center gap-2">
