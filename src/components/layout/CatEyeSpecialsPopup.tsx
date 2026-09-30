@@ -2,16 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, X } from 'lucide-react';
 import { CAT_EYE_MOBILE_IMAGE, CAT_EYE_DESKTOP_IMAGE } from '../../lib/catEyeAssets';
 import { useBundleStock, type BundleStock } from '../../hooks/useBundleStock';
+import { CAT_EYE_DUE_KEY, CAT_EYE_QUEUED_EVENT } from './StarterPackPopup';
 
 // Nude Cat Eye Collection launch popup — promotes the 3 specials (fixed 6-item
 // bundle, capped buy-2, fixed 5-item bundle). Unlike WomensDayPopup/
 // BirthdayBundlePopup this collection isn't time-boxed, so there's no
-// countdown/expiry — it simply shows on a visit cadence like the others.
-
-const VISITS_KEY = 'blom_cateye_specials_visits';
-const SHOW_AT_KEY = 'blom_cateye_specials_show_at';
-const SESSION_KEY = 'blom_cateye_specials_session';
-const SHOW_DELAY_MS = 3000;
+// countdown/expiry. It follows the Starter Pack popup (see StarterPackPopup).
 
 const MOBILE_IMAGE = CAT_EYE_MOBILE_IMAGE;
 const DESKTOP_IMAGE = CAT_EYE_DESKTOP_IMAGE;
@@ -47,17 +43,6 @@ const SPECIALS = [
   },
 ];
 
-const readInt = (key: string, fallback: number): number => {
-  try {
-    const value = Number.parseInt(localStorage.getItem(key) || '', 10);
-    return Number.isFinite(value) ? value : fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const nextInterval = (): number => 3 + Math.floor(Math.random() * 3);
-
 // "Any 2 Colours" isn't a bundle row — it needs at least 2 of the 5 shades in stock.
 export const isCatEyeSpecialSoldOut = (
   bundleSlug: string | null,
@@ -84,37 +69,35 @@ export const CatEyeSpecialsPopup: React.FC = () => {
   const specials = useCatEyeSpecials();
   const availableCount = specials.filter((special) => !special.soldOut).length;
 
+  // Shown only as the follow-up to the Starter Pack popup, which owns the visit
+  // cadence and queues this one (via sessionStorage + an event) when it closes.
   useEffect(() => {
-    let visits = readInt(VISITS_KEY, 0);
-    const showAt = readInt(SHOW_AT_KEY, 1);
-    try {
-      if (!sessionStorage.getItem(SESSION_KEY)) {
-        visits += 1;
-        localStorage.setItem(VISITS_KEY, String(visits));
-        sessionStorage.setItem(SESSION_KEY, '1');
-      }
-    } catch {
-      // Storage may be unavailable in private browsing; the popup can still show.
-    }
-
-    if (visits < showAt) return;
-
-    // Another auto-popup already claimed this visit — yield to avoid stacking.
-    if (typeof window !== 'undefined' && window.__blomSignup?.hasShown) return;
+    const schedule = (dueAt: number) => {
+      if (timerRef.current) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        try {
+          sessionStorage.removeItem(CAT_EYE_DUE_KEY);
+        } catch {
+          // Nothing to clean up without storage.
+        }
+        setIsOpen(true);
+      }, Math.max(0, dueAt - Date.now()));
+    };
 
     try {
-      localStorage.setItem(SHOW_AT_KEY, String(visits + nextInterval()));
+      const dueAt = Number.parseInt(sessionStorage.getItem(CAT_EYE_DUE_KEY) || '', 10);
+      if (Number.isFinite(dueAt)) schedule(dueAt);
     } catch {
-      // A failed reminder write should not block the current promo view.
+      // Storage unavailable — the queued event below still works on this page.
     }
 
-    if (typeof window !== 'undefined') {
-      window.__blomSignup = window.__blomSignup || {};
-      window.__blomSignup.hasShown = true;
-    }
-
-    timerRef.current = window.setTimeout(() => setIsOpen(true), SHOW_DELAY_MS);
+    const handleQueued = (event: Event) => {
+      const delayMs = (event as CustomEvent<{ delayMs: number }>).detail?.delayMs ?? 0;
+      schedule(Date.now() + delayMs);
+    };
+    window.addEventListener(CAT_EYE_QUEUED_EVENT, handleQueued);
     return () => {
+      window.removeEventListener(CAT_EYE_QUEUED_EVENT, handleQueued);
       if (timerRef.current) window.clearTimeout(timerRef.current);
     };
   }, []);

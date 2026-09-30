@@ -10,6 +10,7 @@ import { BackInStockPopup } from './BackInStockPopup';
 import { BirthdayBundlePopup } from './BirthdayBundlePopup';
 import { WomensDayPopup } from './WomensDayPopup';
 import { CatEyeSpecialsPopup } from './CatEyeSpecialsPopup';
+import { StarterPackPopup } from './StarterPackPopup';
 
 interface HeaderProps {
   showMobileMenu?: boolean;
@@ -64,6 +65,7 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
       <AnnouncementBar />
       <AnnouncementSignup />
       {/* Nude Cat Eye launch is the current live promo; it claims the visit ahead of the seasonal/restock popups. */}
+      <StarterPackPopup />
       <CatEyeSpecialsPopup />
       <WomensDayPopup />
       <BirthdayBundlePopup />
