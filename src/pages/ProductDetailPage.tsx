@@ -310,6 +310,20 @@ export const ProductDetailPage: React.FC = () => {
           setProduct(processedProduct);
           setSelectedImageIndex(0);
 
+          // Display-only items that aren't sold as separate products (e.g. a bundle-exclusive
+          // sample). Shown in "What's Included" without a link; never stock-tracked.
+          const extraIncluded = productSource === 'bundles' && Array.isArray(resolvedProductData.extra_included_items)
+            ? resolvedProductData.extra_included_items
+                .filter((item: any) => item?.name)
+                .map((item: any, idx: number) => ({
+                  id: `extra-${idx}`,
+                  name: item.name,
+                  slug: null,
+                  image: item.image || '/blom_logo.webp',
+                  quantity: item.quantity || 1
+                }))
+            : [];
+
           // For bundles/collections: resolve the included component products so we can
           // render a "What's Included" section. bundle_products is [{product_id, quantity, variant_id}]
           if (productSource === 'bundles' && Array.isArray(resolvedProductData.bundle_products) && resolvedProductData.bundle_products.length > 0) {
@@ -343,12 +357,12 @@ export const ProductDetailPage: React.FC = () => {
                   };
                 })
                 .filter(Boolean);
-              setBundleComponents(resolved);
+              setBundleComponents([...resolved, ...extraIncluded]);
             } else {
-              setBundleComponents([]);
+              setBundleComponents(extraIncluded);
             }
           } else {
-            setBundleComponents([]);
+            setBundleComponents(extraIncluded);
           }
 
           // Set first variant as selected if variants exist
@@ -1055,12 +1069,9 @@ export const ProductDetailPage: React.FC = () => {
                 {product.isBundle && bundleComponents.length > 0 && (
                   <AccordionItem title={`What's Included (${bundleComponents.length})`} defaultOpen={true}>
                     <ul className="space-y-3">
-                      {bundleComponents.map((item: any) => (
-                        <li key={item.id}>
-                          <Link
-                            to={`/products/${item.slug}`}
-                            className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-pink-50 transition-colors group"
-                          >
+                      {bundleComponents.map((item: any) => {
+                        const details = (
+                          <>
                             <div className="w-14 h-14 rounded-lg overflow-hidden bg-gray-50 flex-shrink-0 border border-gray-100">
                               <OptimizedImage
                                 src={item.image}
@@ -1069,13 +1080,27 @@ export const ProductDetailPage: React.FC = () => {
                               />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-gray-900 truncate group-hover:text-pink-600">{item.name}</p>
+                              <p className={`text-sm font-medium text-gray-900 truncate ${item.slug ? 'group-hover:text-pink-600' : ''}`}>{item.name}</p>
                               <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                             </div>
-                            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-pink-500 flex-shrink-0" />
-                          </Link>
-                        </li>
-                      ))}
+                          </>
+                        );
+                        return (
+                          <li key={item.id}>
+                            {item.slug ? (
+                              <Link
+                                to={`/products/${item.slug}`}
+                                className="flex items-center gap-3 p-2 -mx-2 rounded-xl hover:bg-pink-50 transition-colors group"
+                              >
+                                {details}
+                                <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-pink-500 flex-shrink-0" />
+                              </Link>
+                            ) : (
+                              <div className="flex items-center gap-3 p-2 -mx-2">{details}</div>
+                            )}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </AccordionItem>
                 )}
