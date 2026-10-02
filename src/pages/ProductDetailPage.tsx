@@ -893,7 +893,8 @@ export const ProductDetailPage: React.FC = () => {
                 <div className="mb-8">
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-sm font-semibold text-gray-900">
-                      {product.name?.toLowerCase().includes('oil') ? 'Scent:' : 
+                      {product.variant_label ? `${product.variant_label}:` :
+                       product.name?.toLowerCase().includes('oil') ? 'Scent:' : 
                        product.name?.toLowerCase().includes('acrylic') ? 'Colour:' : 
                        'Option:'}
                     </span>
