@@ -1178,7 +1178,7 @@ export const ProductDetailPage: React.FC = () => {
                           <h4 className="font-semibold text-gray-900 text-sm mb-2">Claims</h4>
                           <div className="flex flex-wrap gap-2">
                             {product.details.claims.map((claim: string, idx: number) => (
-                              <span key={idx} className="bg-pink-50 text-pink-700 text-xs font-medium px-2.5 py-1 rounded-full border border-pink-100">
+                              <span key={idx} className="bg-pink-400 text-white text-xs font-medium px-2.5 py-1 rounded-full border border-pink-100">
                                 {claim}
                               </span>
                             ))}

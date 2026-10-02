@@ -845,7 +845,7 @@ export const ShopPage: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="font-bold text-sm uppercase tracking-widest text-gray-500">Price</h3>
-                    <span className="text-xs font-medium text-pink-600 bg-pink-50 px-2 py-1 rounded-full">
+                    <span className="text-xs font-medium text-white bg-pink-400 px-2 py-1 rounded-full">
                       {activeResultsCount} found
                     </span>
                   </div>
@@ -1016,7 +1016,7 @@ export const ShopPage: React.FC = () => {
                 {expandedFilterSection === 'price' && (
                   <div className="px-2 pb-2">
                     <div className="flex justify-end mb-2">
-                      <span className="text-xs font-medium text-pink-600 bg-pink-50 px-2 py-1 rounded-full">
+                      <span className="text-xs font-medium text-white bg-pink-400 px-2 py-1 rounded-full">
                         {activeResultsCount} found
                       </span>
                     </div>

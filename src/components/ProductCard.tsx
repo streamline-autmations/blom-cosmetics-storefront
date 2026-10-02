@@ -151,7 +151,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <button
               onClick={handleWishlistToggle}
               aria-label={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
-              className={`p-2 rounded-full transition-colors self-end ${isWishlisted ? 'text-pink-500 bg-pink-50' : 'text-gray-400 hover:bg-gray-100'}`}
+              className={`p-2 rounded-full transition-colors self-end ${isWishlisted ? 'text-white bg-pink-400' : 'text-gray-400 hover:bg-gray-100'}`}
             >
               <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
             </button>

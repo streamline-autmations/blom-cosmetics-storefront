@@ -1952,8 +1952,8 @@ export const CourseDetailPage: React.FC = () => {
               <div className="grid md:grid-cols-2 gap-8">
                 {/* Location */}
                 <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                  <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <MapPin className="h-8 w-8 text-pink-400" />
+                  <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                    <MapPin className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Location</h3>
                   <p 
@@ -1981,8 +1981,8 @@ export const CourseDetailPage: React.FC = () => {
 
                 {/* Payment Info */}
                 <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                  <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <CreditCard className="h-8 w-8 text-pink-400" />
+                  <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                    <CreditCard className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">{course.isOnline ? 'Payment' : 'Payment Options'}</h3>
                   <p className="text-gray-800 text-base md:text-lg leading-relaxed">
@@ -2006,8 +2006,8 @@ export const CourseDetailPage: React.FC = () => {
                   const scheduleImages: { src: string; alt: string }[] = activeInstructor?.scheduleImages ?? [];
                   return (
                     <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                      <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                        <Calendar className="h-8 w-8 text-pink-400" />
+                      <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                        <Calendar className="h-8 w-8 text-white" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">{course.isOnline ? 'Access' : 'Course Dates'}</h3>
                       <div className="space-y-2">
@@ -2073,8 +2073,8 @@ export const CourseDetailPage: React.FC = () => {
 
                 {!course.isOnline && course.thingsToBring.length > 0 && (
                   <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                    <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                      <Package className="h-8 w-8 text-pink-400" />
+                    <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                      <Package className="h-8 w-8 text-white" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">What You Need to Bring</h3>
                     <ul className="text-gray-800 text-base md:text-lg leading-relaxed space-y-3 text-left">
@@ -2093,8 +2093,8 @@ export const CourseDetailPage: React.FC = () => {
                   const displaySchedule = activeInstructor?.trainingSchedule ?? course.trainingSchedule;
                   return displaySchedule.length > 0 && displaySchedule.map((block: any) => (
                     <div key={block.title} className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                      <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                        <Clock className="h-8 w-8 text-pink-400" />
+                      <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                        <Clock className="h-8 w-8 text-white" />
                       </div>
                       <h3 className="text-xl font-bold text-gray-900 mb-3 uppercase tracking-wide">{`Training Times - ${block.title}`}</h3>
                       <ul className="text-gray-800 text-base md:text-lg leading-relaxed space-y-3 text-left mt-4">
@@ -2111,8 +2111,8 @@ export const CourseDetailPage: React.FC = () => {
 
                 {!course.isOnline && course.studentDiscount.length > 0 && (
                   <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                    <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                      <Ticket className="h-8 w-8 text-pink-400" />
+                    <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                      <Ticket className="h-8 w-8 text-white" />
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Exclusive Student Discount</h3>
                     <ul className="text-gray-800 text-base md:text-lg leading-relaxed space-y-3 text-left">
@@ -2128,8 +2128,8 @@ export const CourseDetailPage: React.FC = () => {
 
                 {/* Contact */}
                 <div className="min-w-0 break-words p-6 sm:p-10 md:p-12 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-center" style={{ backgroundColor: '#CEE5FF' }}>
-                  <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-5">
-                    <Phone className="h-8 w-8 text-pink-400" />
+                  <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-5 text-white">
+                    <Phone className="h-8 w-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-4 uppercase tracking-wide">Contact</h3>
                   <div className="space-y-3">

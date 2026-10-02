@@ -290,7 +290,7 @@ export const BlogPage: React.FC = () => {
                   <div className="md:w-1/2 p-8">
                     <div className="flex items-center gap-2 mb-4">
                       {featuredPost.tags.slice(0, 2).map((tag) => (
-                        <span key={tag} className="px-3 py-1 bg-pink-100 text-pink-600 rounded-full text-sm font-medium">
+                        <span key={tag} className="px-3 py-1 bg-pink-400 text-white rounded-full text-sm font-medium">
                           {tag}
                         </span>
                       ))}

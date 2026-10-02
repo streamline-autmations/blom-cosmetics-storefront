@@ -184,7 +184,7 @@ export const StarterPackPopup: React.FC = () => {
               <li key={item.label} className="flex items-center justify-between gap-3 px-4 py-3">
                 <span className="text-sm font-semibold text-[#22324a]">{item.label}</span>
                 {item.exclusive && (
-                  <span className="shrink-0 rounded-full bg-[#fde8ef] px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#c2436e]">
+                  <span className="shrink-0 rounded-full bg-pink-400 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                     Pack only
                   </span>
                 )}

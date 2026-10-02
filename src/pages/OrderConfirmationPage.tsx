@@ -175,7 +175,7 @@ export const OrderConfirmationPage: React.FC = () => {
                       <div key={index} className="flex items-start gap-4">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                           step.status === 'completed' ? 'bg-green-100 text-green-500' :
-                          step.status === 'current' ? 'bg-blue-100 text-blue-500' :
+                          step.status === 'current' ? 'bg-blue-400 text-white' :
                           'bg-gray-100 text-gray-400'
                         }`}>
                           <step.icon className="h-5 w-5" />

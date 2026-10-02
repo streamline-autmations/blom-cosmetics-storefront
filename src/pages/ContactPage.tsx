@@ -744,8 +744,8 @@ export const ContactPage: React.FC = () => {
 
               {/* Returns & Refunds Card */}
               <Card className="text-center p-8 hover:shadow-lg transition-shadow">
-                <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <RotateCcw className="w-8 h-8 text-blue-600" />
+                <div className="w-16 h-16 bg-blue-400 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
+                  <RotateCcw className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">Returns & Refunds</h3>
                 <p className="text-gray-600 mb-6">Easy returns within 30 days</p>
@@ -759,8 +759,8 @@ export const ContactPage: React.FC = () => {
 
               {/* FAQs Card */}
               <Card className="text-center p-8 hover:shadow-lg transition-shadow">
-                <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <HelpCircle className="w-8 h-8 text-pink-600" />
+                <div className="w-16 h-16 bg-pink-400 rounded-full flex items-center justify-center mx-auto mb-6 text-white">
+                  <HelpCircle className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-3">FAQs</h3>
                 <p className="text-gray-600 mb-6">Find answers to common questions</p>
@@ -791,11 +791,11 @@ export const ContactPage: React.FC = () => {
                       className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
                       <h3 className="font-semibold text-lg text-gray-900">{faq.question}</h3>
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 bg-blue-400 rounded-full flex items-center justify-center flex-shrink-0 text-white">
                         {expandedFaq === index ? (
-                          <ChevronUp className="h-4 w-4 text-blue-600" />
+                          <ChevronUp className="h-4 w-4 text-white" />
                         ) : (
-                          <span className="text-blue-600 font-bold text-lg">+</span>
+                          <span className="text-white font-bold text-lg">+</span>
                         )}
                       </div>
                     </button>

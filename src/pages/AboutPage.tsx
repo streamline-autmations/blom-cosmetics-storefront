@@ -208,7 +208,7 @@ export const AboutPage: React.FC = () => {
                           {member.badges.map((b: string, i: number) => (
                             <span
                               key={i}
-                              className="px-3 py-1 rounded-full text-xs font-medium bg-pink-50 text-pink-600 ring-1 ring-pink-100"
+                              className="px-3 py-1 rounded-full text-xs font-medium bg-pink-400 text-white ring-1 ring-pink-100"
                             >
                               {b}
                             </span>

@@ -302,7 +302,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                             suggestion.matchType === 'name' 
                               ? 'bg-green-100 text-green-700' 
                               : suggestion.matchType === 'description'
-                              ? 'bg-blue-100 text-blue-700'
+                              ? 'bg-blue-400 text-white'
                               : 'bg-purple-100 text-purple-700'
                           }`}>
                             {suggestion.matchType === 'name' ? 'Name' : 
@@ -338,8 +338,8 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                                 <span
                                   key={badgeIndex}
                                   className={`text-xs px-1.5 py-0.5 rounded-full ${
-                                    badge === 'Bestseller' ? 'bg-pink-100 text-pink-700' :
-                                    badge === 'New' ? 'bg-blue-100 text-blue-700' :
+                                    badge === 'Bestseller' ? 'bg-pink-400 text-white' :
+                                    badge === 'New' ? 'bg-blue-400 text-white' :
                                     badge === 'Sale' ? 'bg-red-100 text-red-700' :
                                     'bg-gray-100 text-gray-700'
                                   }`}
@@ -358,7 +358,7 @@ export const AutocompleteSearch: React.FC<AutocompleteSearchProps> = ({
                           onClick={(e) => handleWishlistToggle(e, suggestion.product)}
                           className={`p-2 rounded-full transition-colors ${
                             isWishlisted[suggestion.product.slug]
-                              ? 'text-pink-500 bg-pink-50'
+                              ? 'text-white bg-pink-400'
                               : 'text-gray-400 hover:text-pink-500 hover:bg-pink-50'
                           }`}
                         >

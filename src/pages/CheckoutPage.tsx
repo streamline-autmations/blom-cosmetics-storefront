@@ -1285,7 +1285,7 @@ export const CheckoutPage: React.FC = () => {
                                   {uberQuote?.available && !uberQuote.loading && (
                                     <>
                                       <p className="text-sm text-gray-600">Delivered today via Uber Direct. ETA: {uberQuote.eta}</p>
-                                      <span className="inline-block mt-2 px-2 py-0.5 bg-pink-100 text-pink-700 rounded-full text-xs font-medium">Express</span>
+                                      <span className="inline-block mt-2 px-2 py-0.5 bg-pink-400 text-white rounded-full text-xs font-medium">Express</span>
                                     </>
                                   )}
                                   {!uberQuote?.available && !uberQuote?.loading && (
@@ -1913,7 +1913,7 @@ export const CheckoutPage: React.FC = () => {
                         onClick={() => handleWishlistToggle(product.slug, product.name, product.price, product.image)}
                         className={`p-2 rounded-full transition-colors ${
                           isWishlisted[product.slug]
-                            ? 'text-pink-500 bg-pink-50'
+                            ? 'text-white bg-pink-400'
                             : 'text-gray-400 hover:text-pink-500 hover:bg-pink-50'
                         }`}
                         aria-label={isWishlisted[product.slug] ? 'Remove from wishlist' : 'Add to wishlist'}

@@ -145,8 +145,8 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-4 md:p-6 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-pink-100 rounded-full flex items-center justify-center">
-              <MessageSquare className="h-4 w-4 md:h-5 md:w-5 text-pink-500" />
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-pink-400 rounded-full flex items-center justify-center text-white">
+              <MessageSquare className="h-4 w-4 md:h-5 md:w-5 text-white" />
             </div>
             <div>
               <h2 className="text-lg md:text-xl font-bold text-gray-900">Write a Review</h2>
@@ -297,8 +297,8 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
           {/* Privacy Notice */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 md:p-4">
             <div className="flex items-start gap-2 md:gap-3">
-              <div className="w-4 h-4 md:w-5 md:h-5 bg-blue-100 rounded-full flex items-center justify-center mt-0.5">
-                <Check className="h-2 w-2 md:h-3 md:w-3 text-blue-600" />
+              <div className="w-4 h-4 md:w-5 md:h-5 bg-blue-400 rounded-full flex items-center justify-center mt-0.5 text-white">
+                <Check className="h-2 w-2 md:h-3 md:w-3 text-white" />
               </div>
               <div className="text-xs md:text-sm text-blue-800">
                 <p className="font-medium mb-1">Privacy Notice</p>

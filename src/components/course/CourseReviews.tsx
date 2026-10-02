@@ -293,7 +293,7 @@ export const CourseReviews: React.FC<CourseReviewsProps> = ({
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                           <h3 className="text-lg font-bold text-gray-900">{review.name}</h3>
-                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-pink-500 bg-pink-50 px-2 py-0.5 rounded-full">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-white bg-pink-400 px-2 py-0.5 rounded-full">
                             <BadgeCheck className="h-3.5 w-3.5" />
                             Student
                           </span>

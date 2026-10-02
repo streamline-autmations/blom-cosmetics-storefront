@@ -266,7 +266,7 @@ button {
 .newsletter .btn-blue {
   padding: 10px 20px;
   background: #FF74A4;
-  color: #1a1a1a;
+  color: #ffffff;
   border: 2px solid #FF74A4;
   border-radius: 25px;
   font-size: 14px;
@@ -508,7 +508,7 @@ button {
 
   /* Secondary outline (black) */
   .btn-outline, .btn-secondary { background: #fff; color: #000; border: 2px solid #000; border-radius: 9999px; }
-  .btn-outline:hover, .btn-secondary:hover { background: linear-gradient(135deg, #8EC5FF, #A8D4FF); color: #1a1a1a; border: 2px solid #8EC5FF; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(142, 197, 255, 0.4); }
+  .btn-outline:hover, .btn-secondary:hover { background: linear-gradient(135deg, #8EC5FF, #A8D4FF); color: #fff; border: 2px solid #8EC5FF; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(142, 197, 255, 0.4); }
 
   .btn-ghost {
     @apply text-gray-600 hover:bg-gray-100 focus:ring-gray-200;
@@ -744,7 +744,7 @@ button {
   @media (max-width: 640px) {
     .btn { border-radius: 9999px; padding: 0.625rem 1.5rem; }
   }
-  .btn-pink{ background:#FF74A4; color:#1a1a1a; }
+  .btn-pink{ background:#FF74A4; color:#fff; }
   .btn-outline{ background:#fff; color:#FF74A4; border:1px solid #FF74A4; }
   .btn-outline:hover{ background: linear-gradient(135deg, #8EC5FF, #A8D4FF); color: #fff; border: 1px solid #8EC5FF; box-shadow: 0 6px 20px rgba(142, 197, 255, 0.4); }
 

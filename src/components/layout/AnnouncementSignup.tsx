@@ -166,20 +166,20 @@ export const AnnouncementSignup: React.FC = () => {
 
                 <ul className="mb-4 space-y-2 text-sm text-gray-600">
                   <li className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-pink-100 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-pink-500" />
+                    <div className="w-4 h-4 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                      <Check className="w-3 h-3 text-white" />
                     </div>
                     <span>Instant R100 welcome code (Min spend R500)</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-pink-100 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-pink-500" />
+                    <div className="w-4 h-4 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                      <Check className="w-3 h-3 text-white" />
                     </div>
                     <span>Early access to launches</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <div className="w-4 h-4 bg-pink-100 rounded-full flex items-center justify-center">
-                      <Check className="w-3 h-3 text-pink-500" />
+                    <div className="w-4 h-4 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                      <Check className="w-3 h-3 text-white" />
                     </div>
                     <span>Member-only promos</span>
                   </li>

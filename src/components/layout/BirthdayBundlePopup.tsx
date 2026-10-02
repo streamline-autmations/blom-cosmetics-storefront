@@ -167,8 +167,8 @@ export const BirthdayBundlePopup: React.FC = () => {
             <ul className="mb-5 space-y-2 text-sm text-gray-600">
               {CHECKLIST.map((point) => (
                 <li key={point} className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-pink-100 rounded-full flex items-center justify-center">
-                    <Check className="w-3 h-3 text-pink-500" />
+                  <div className="w-4 h-4 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                    <Check className="w-3 h-3 text-white" />
                   </div>
                   <span>{point}</span>
                 </li>
@@ -182,7 +182,7 @@ export const BirthdayBundlePopup: React.FC = () => {
             </div>
 
             {/* Urgency: live countdown to the exact moment the discount reverts. */}
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-pink-50 border border-pink-200 px-3 py-1.5 text-sm font-semibold text-pink-600">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-pink-400 border border-pink-200 px-3 py-1.5 text-sm font-semibold text-white">
               <span className="relative flex h-2 w-2">
                 <span className="motion-safe:animate-ping absolute inline-flex h-full w-full rounded-full bg-pink-400 opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-pink-500" />

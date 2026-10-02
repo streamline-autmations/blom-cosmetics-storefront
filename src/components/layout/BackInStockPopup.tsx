@@ -152,8 +152,8 @@ export const BackInStockPopup: React.FC = () => {
             <ul className="mb-5 space-y-2 text-sm text-gray-600">
               {['Vivid, true-to-swatch colour', 'Glossy, chip-resistant finish', 'Bases, toppers and finishes in one system'].map((point) => (
                 <li key={point} className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-pink-100 rounded-full flex items-center justify-center">
-                    <Check className="w-3 h-3 text-pink-500" />
+                  <div className="w-4 h-4 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                    <Check className="w-3 h-3 text-white" />
                   </div>
                   <span>{point}</span>
                 </li>

@@ -343,7 +343,7 @@ export const CookiePolicyPage: React.FC = () => {
                         <ol className="space-y-2">
                           {browser.steps.map((step, stepIndex) => (
                             <li key={stepIndex} className="flex items-start gap-3 text-sm text-gray-600">
-                              <span className="w-6 h-6 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
+                              <span className="w-6 h-6 bg-pink-400 text-white rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0">
                                 {stepIndex + 1}
                               </span>
                               {step}

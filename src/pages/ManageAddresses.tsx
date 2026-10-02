@@ -427,7 +427,7 @@ export default function ManageAddresses() {
                         {address.address_name || 'Unnamed Address'}
                       </h3>
                       {address.is_default && (
-                        <span className="bg-pink-100 text-pink-700 text-xs px-2 py-1 rounded-full">
+                        <span className="bg-pink-400 text-white text-xs px-2 py-1 rounded-full">
                           Default
                         </span>
                       )}

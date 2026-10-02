@@ -148,8 +148,8 @@ export const BundleVariantModal: React.FC<BundleVariantModalProps> = ({
             {bundle.includedProducts.map((product: any) => (
               <div key={product.id} className="border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center">
-                    <Check className="h-6 w-6 text-pink-600" />
+                  <div className="w-12 h-12 bg-pink-400 rounded-full flex items-center justify-center text-white">
+                    <Check className="h-6 w-6 text-white" />
                   </div>
                   <div className="flex-1">
                     <h3 className="font-semibold text-gray-900">{product.name}</h3>
