@@ -1108,7 +1108,7 @@ export const ProductDetailPage: React.FC = () => {
 
                 {/* Features & Benefits */}
                 {product.features && product.features.length > 0 && (
-                  <AccordionItem title="Features & Benefits">
+                  <AccordionItem title={product.features_title || 'Features & Benefits'} defaultOpen={Boolean(product.features_title)}>
                     <ul className="space-y-2 list-disc pl-5">
                       {product.features.map((feature: string, idx: number) => (
                         <li key={idx} className="text-gray-600">{feature}</li>
