@@ -24,6 +24,7 @@ interface WishlistItem {
   price: number;
   image: string;
   slug: string;
+  requiresCustomRequest?: boolean;
 }
 
 export const WishlistPage: React.FC = () => {
@@ -80,6 +81,10 @@ export const WishlistPage: React.FC = () => {
   };
 
   const handleAddToCart = (item: WishlistItem) => {
+    if (item.requiresCustomRequest) {
+      window.location.href = `/products/${item.slug}`;
+      return;
+    }
     const quantity = quantities[item.id] || 1;
     
     cartStore.addItem({
@@ -97,6 +102,7 @@ export const WishlistPage: React.FC = () => {
     let totalItems = 0;
     
     wishlistItems.forEach(item => {
+      if (item.requiresCustomRequest) return;
       const quantity = quantities[item.id] || 1;
       cartStore.addItem({
         id: `item_${Date.now()}_${item.id}`,

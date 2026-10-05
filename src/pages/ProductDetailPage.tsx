@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../lib/cart';
@@ -25,6 +25,8 @@ import { useToast } from '../components/ui/use-toast';
 import { ProductCard } from '../components/ProductCard';
 import { isBundleInStock } from '../lib/stockAvailability';
 import { PaymentMethods } from '../components/payment/PaymentMethods';
+import { ShadeRequestForm } from '../components/product/ShadeRequestForm';
+import { emptyShadeRequest, sanitizeShadeRequest, validateShadeRequest, ShadeRequest, ShadeRequestErrors } from '../lib/shadeRequest';
 
 const numericStock = (value: unknown): number | null => {
   const numberValue = Number(value);
@@ -64,6 +66,10 @@ export const ProductDetailPage: React.FC = () => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [shadeRequest, setShadeRequest] = useState<ShadeRequest>(emptyShadeRequest);
+  const [shadeErrors, setShadeErrors] = useState<ShadeRequestErrors>({});
+  const [shadeUploading, setShadeUploading] = useState(false);
+  const shadeFormRef = useRef<HTMLDivElement>(null);
   // For bundles/collections: the resolved component products shown in "What's Included"
   const [bundleComponents, setBundleComponents] = useState<any[]>([]);
 
@@ -426,7 +432,8 @@ export const ProductDetailPage: React.FC = () => {
             price: p.price,
             images: [p.image_url || p.thumbnail_url],
             category: p.category,
-            inStock: isProductAvailable(p)
+            inStock: isProductAvailable(p),
+            requiresCustomRequest: p.requires_custom_request === true
           })));
 
           // Fetch approved reviews
@@ -601,22 +608,51 @@ export const ProductDetailPage: React.FC = () => {
       return false;
     }
     
+    // Made-to-order products carry the customer's request on the cart line.
+    const requiresRequest = product.requires_custom_request === true;
+    let customization: ShadeRequest | undefined;
+    if (requiresRequest) {
+      if (shadeUploading) {
+        toast({ title: "Photo still uploading", description: "Please wait for your inspiration photo to finish uploading." });
+        return false;
+      }
+      const cleaned = sanitizeShadeRequest(shadeRequest);
+      const errors = validateShadeRequest(cleaned);
+      setShadeErrors(errors);
+      if (Object.keys(errors).length > 0) {
+        shadeFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        toast({ title: "Add your shade request", description: "Fill in the highlighted fields so Avané can prepare your shade." });
+        return false;
+      }
+      customization = cleaned;
+    }
+
     const variantImage = variantData?.image || product.images[selectedImageIndex] || product.images[0];
     const variantPrice = variantData?.price || product.price;
+    const requestLineId = requiresRequest ? `${product.id}-request-${Date.now()}` : undefined;
 
     addItem({
-      id: product.id,
+      id: requestLineId || product.id,
       productId: product.id,
+      variantId: requestLineId,
       name: product.name,
       price: variantPrice,
       image: variantImage,
-      variant: selectedVariant && !['Default Title', 'Default'].includes(selectedVariant) ? { title: selectedVariant } : undefined
-    }, quantity);
+      variant: selectedVariant && !['Default Title', 'Default'].includes(selectedVariant) ? { title: selectedVariant } : undefined,
+      customization
+    }, requiresRequest ? 1 : quantity);
 
     toast({
       title: "Added to cart",
-      description: `${product.name}${selectedVariant && !['Default Title', 'Default'].includes(selectedVariant) ? ` (${selectedVariant})` : ''} has been added to your cart.`
+      description: requiresRequest
+        ? `${product.name}${selectedVariant ? ` (${selectedVariant})` : ''} and your shade request have been added to your cart.`
+        : `${product.name}${selectedVariant && !['Default Title', 'Default'].includes(selectedVariant) ? ` (${selectedVariant})` : ''} has been added to your cart.`
     });
+
+    if (requiresRequest) {
+      setShadeRequest(emptyShadeRequest());
+      setShadeErrors({});
+    }
 
     return true;
   };
@@ -971,14 +1007,30 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               )}
 
+              {product.requires_custom_request === true && (
+                <ShadeRequestForm
+                  ref={shadeFormRef}
+                  value={shadeRequest}
+                  errors={shadeErrors}
+                  onUploadingChange={setShadeUploading}
+                  onChange={(next) => {
+                    setShadeRequest(next);
+                    if (Object.keys(shadeErrors).length > 0) setShadeErrors(validateShadeRequest(sanitizeShadeRequest(next)));
+                  }}
+                />
+              )}
+
               {/* Quantity & Actions */}
               <div className="space-y-4 mb-8 pb-8 border-b border-gray-100">
+                {product.requires_custom_request !== true && (
                 <div className="flex items-center gap-3 mb-2">
                   <span className="text-sm font-semibold text-gray-900">Quantity</span>
                 </div>
+                )}
                 
                 <div className="flex flex-col sm:flex-row gap-4">
-                  {/* Quantity Selector */}
+                  {/* Quantity Selector (one jar per shade request) */}
+                  {product.requires_custom_request !== true && (
                   <div className="flex items-center border border-gray-200 rounded-xl h-16 sm:h-12 w-fit">
                     <button 
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -995,6 +1047,7 @@ export const ProductDetailPage: React.FC = () => {
                       <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
                     </button>
                   </div>
+                  )}
 
                   {/* Add to Cart Button - Larger on mobile, match Buy Now size */}
                   <button

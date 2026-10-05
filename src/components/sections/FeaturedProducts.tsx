@@ -12,6 +12,7 @@ interface FeaturedItem {
   shortDescription?: string;
   image: string;
   inStock: boolean;
+  requiresCustomRequest: boolean;
 }
 
 interface ProductRow {
@@ -29,6 +30,7 @@ interface ProductRow {
   stock_on_hand: number | null;
   stock_available: number | null;
   inventory_quantity: number | null;
+  requires_custom_request: boolean | null;
 }
 
 const familyKey = (name: string): string => {
@@ -81,7 +83,7 @@ export const FeaturedProducts: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('id, name, slug, price, compare_at_price, short_description, thumbnail_url, image_url, product_type, status, out_of_stock, stock, stock_on_hand, stock_available, inventory_quantity, created_at')
+          .select('id, name, slug, price, compare_at_price, short_description, thumbnail_url, image_url, product_type, status, out_of_stock, stock, stock_on_hand, stock_available, inventory_quantity, requires_custom_request, created_at')
           .eq('status', 'active')
           .order('created_at', { ascending: false })
           .limit(40);
@@ -108,6 +110,7 @@ export const FeaturedProducts: React.FC = () => {
             shortDescription: product.short_description || undefined,
             image: product.thumbnail_url || product.image_url || '',
             inStock: true,
+            requiresCustomRequest: product.requires_custom_request === true,
           }));
 
         if (!cancelled) {
@@ -162,6 +165,7 @@ export const FeaturedProducts: React.FC = () => {
                 inStock={item.inStock}
                 badges={['New']}
                 hoverShine={false}
+                requiresCustomRequest={item.requiresCustomRequest}
               />
             </li>
           ))}

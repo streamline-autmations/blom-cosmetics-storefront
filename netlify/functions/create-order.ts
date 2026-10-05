@@ -10,6 +10,7 @@ import {
   CAT_EYE_TWO_FOR_OFFER_CODE,
 } from '../../src/lib/catEyeTwoForOffer'
 import { standardShippingCentsFor } from '../../src/lib/shipping'
+import { sanitizeShadeRequest, validateShadeRequest } from '../../src/lib/shadeRequest'
 import { resolveAttribution } from './_lib/affiliate'
 import crypto from 'crypto'
 import { isBundleInStock } from '../../src/lib/stockAvailability'
@@ -102,7 +103,7 @@ export const handler: Handler = async (event) => {
     // ProductDetailPage.tsx / ShopPage.tsx, which read `bundles` directly). They must be
     // merged in here too, otherwise every bundle-only checkout fails catalog verification.
     const [productsRes, bundlesRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants`, {
+      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants,requires_custom_request`, {
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
       }),
       fetch(`${SUPABASE_URL}/rest/v1/bundles?select=id,name,slug,sku,price_cents,status,is_active,stock,bundle_products`, {
@@ -280,6 +281,51 @@ export const handler: Handler = async (event) => {
         };
       }
 
+      // Made-to-order products (e.g. the Created For You live acrylic) need the
+      // customer's request and a chosen option (the live date) on every line, one jar
+      // per request. Checked for every order_kind, since order_kind is client-supplied.
+      let customization = null
+      if (resolvedProduct?.requires_custom_request === true) {
+        if (Number(it.quantity ?? 1) !== 1) {
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              error: `Each ${resolvedProduct.name || baseName} is made from its own shade request, so the quantity must be 1. Add another from the product page for a second shade.`,
+              code: 'INVALID_QUANTITY',
+              product_id: resolvedProduct.id,
+              product_name: resolvedProduct.name || baseName
+            })
+          };
+        }
+        const hasOptions = Array.isArray(resolvedProduct.variants) && resolvedProduct.variants.length > 0
+        if (hasOptions && !variantName) {
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              error: `Please choose a live date for ${resolvedProduct.name || baseName}.`,
+              code: 'INVALID_VARIANT',
+              product_id: resolvedProduct.id,
+              product_name: resolvedProduct.name || baseName
+            })
+          };
+        }
+        customization = sanitizeShadeRequest(it.customization)
+        if (Object.keys(validateShadeRequest(customization)).length > 0) {
+          return {
+            statusCode: 400,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              error: `${resolvedProduct.name || baseName} is missing your shade request. Please remove it from your cart and add it again from the product page with your TikTok handle, vibe and inspiration.`,
+              code: 'CUSTOM_REQUEST_REQUIRED',
+              product_id: resolvedProduct.id,
+              product_name: resolvedProduct.name || baseName
+            })
+          };
+        }
+      }
+
       const requestedQuantity = Number(it.quantity ?? 1)
       if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
         return {
@@ -303,7 +349,8 @@ export const handler: Handler = async (event) => {
         unit_price: resolvedProduct
           ? getCanonicalPriceCents(resolvedProduct, variantName)
           : Number(it.unit_price ?? it.price ?? 0),
-        original_sku: it.sku
+        original_sku: it.sku,
+        customization
       });
     }
 
@@ -662,7 +709,8 @@ export const handler: Handler = async (event) => {
           product_name: finalDisplayName,
           quantity: it.quantity,
           unit_price: unitPriceRands, // Store as Rands (e.g. 590.00)
-          sku: it.original_sku || it.resolved_product?.sku || null
+          sku: it.original_sku || it.resolved_product?.sku || null,
+          customization: it.customization || null
         };
       }),
       

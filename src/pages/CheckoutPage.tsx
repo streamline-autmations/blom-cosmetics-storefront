@@ -796,7 +796,8 @@ export const CheckoutPage: React.FC = () => {
             name: it.name,
             unit_price: Math.round(it.price * 100), // <--- FIXED: Convert to Cents
             quantity: it.quantity,
-            variant: it.variant
+            variant: it.variant,
+            customization: it.customization
           })),
           totals: {
             subtotal_cents: Math.round(cartState.subtotal * 100),
@@ -1664,6 +1665,9 @@ export const CheckoutPage: React.FC = () => {
                               {item.variant && (
                                 <p className="text-xs sm:text-sm text-gray-500">{item.variant.title}</p>
                               )}
+                              {item.customization && (
+                                <p className="text-xs font-medium text-pink-600">Shade request saved · {item.customization.tiktok_handle}</p>
+                              )}
                               <p className="text-gray-900 font-bold text-sm sm:text-base">{formatPrice(item.price)}</p>
                             </div>
                             <div className="text-right flex-shrink-0">
@@ -1681,7 +1685,9 @@ export const CheckoutPage: React.FC = () => {
                                   type="button"
                                   aria-label="Increase quantity"
                                   onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                                  className="p-1 sm:p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 active:scale-95 transition"
+                                  disabled={Boolean(item.customization)}
+                                  title={item.customization ? 'One jar per shade request' : undefined}
+                                  className="p-1 sm:p-1.5 rounded-full border border-gray-200 hover:bg-gray-100 active:scale-95 transition disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:active:scale-100"
                                 >
                                   <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </button>

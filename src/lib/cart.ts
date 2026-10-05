@@ -1,6 +1,7 @@
 // Cart state management and utilities
 import { analytics } from './analytics';
 import { standardShippingFor } from './shipping';
+import type { ShadeRequest } from './shadeRequest';
 
 export interface CartItem {
   id: string;
@@ -32,6 +33,8 @@ export interface CartItem {
     selectedVariant?: string;
   }>;
   bundleVariants?: Record<string, string>;
+  // Made-to-order request (products.requires_custom_request); each request is its own line.
+  customization?: ShadeRequest;
 }
 
 export interface CartState {
@@ -171,7 +174,7 @@ class CartStore {
   }
 
   addItem(item: Omit<CartItem, 'quantity'>, quantity: number = 1): void {
-    const existingIndex = this.state.items.findIndex(
+    const existingIndex = item.customization ? -1 : this.state.items.findIndex(
       cartItem => cartItem.productId === item.productId && cartItem.variantId === item.variantId
     );
 

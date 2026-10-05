@@ -5,6 +5,8 @@ interface WishlistItem {
   price: number;
   image: string;
   slug: string;
+  // Made-to-order products must be bought from the product page (shade request form).
+  requiresCustomRequest?: boolean;
 }
 
 class WishlistStore {

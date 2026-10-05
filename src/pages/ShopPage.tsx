@@ -311,6 +311,7 @@ export const ShopPage: React.FC = () => {
             description: p.description || '',
             images: [p.thumbnail_url, p.hover_image, ...(p.gallery_urls || [])].filter(Boolean),
             variants: Array.isArray(p.variants) ? p.variants : [],
+            requiresCustomRequest: p.requires_custom_request === true,
             rating: 0, reviews: 0, badges: p.badges || [],
             createdAt: p.created_at || new Date().toISOString()
           };

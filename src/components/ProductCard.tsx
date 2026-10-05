@@ -28,6 +28,8 @@ interface ProductCardProps {
     image?: string; 
   }>; 
   onCardClickOverride?: () => void;
+  // Made-to-order products need the request form on the product page, so quick-add opens it.
+  requiresCustomRequest?: boolean;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ 
@@ -45,7 +47,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   hideDescription = false,
   displayVariant = 'default',
   variants = [],
-  onCardClickOverride 
+  onCardClickOverride,
+  requiresCustomRequest = false
 }) => { 
   const [isWishlisted, setIsWishlisted] = React.useState(false);
   const [showVariantModal, setShowVariantModal] = React.useState(false);
@@ -75,7 +78,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       showNotification(!inStock ? `${safeName} is sold out.` : `${safeName} is coming soon.`, 'error');
       return;
     }
-    if (hasVariants) {
+    if (requiresCustomRequest) {
+      handleCardClick();
+      return;
+    }
+    if (hasVariants && !requiresCustomRequest) {
       setShowVariantModal(true);
     } else {
       // Handle single variant case (if exists but hasVariants is false)
@@ -97,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const handleWishlistToggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    wishlistStore.toggleItem({ id: slug, productId: slug, name: safeName, price, image: safeImages[0], slug });
+    wishlistStore.toggleItem({ id: slug, productId: slug, name: safeName, price, image: safeImages[0], slug, requiresCustomRequest });
   };
 
   const handleCardClick = () => {
@@ -159,7 +166,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (hasVariants) {
+                  if (hasVariants && !requiresCustomRequest) {
                     setShowVariantModal(true);
                   } else {
                     handleAddToCart(e);
@@ -237,7 +244,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   e.preventDefault();
                   e.stopPropagation();
                   if (price === -1 || !inStock) return;
-                  if (hasVariants) {
+                  if (hasVariants && !requiresCustomRequest) {
                     setShowVariantModal(true);
                   } else {
                     handleAddToCart(e);
@@ -337,7 +344,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (hasVariants) {
+                if (hasVariants && !requiresCustomRequest) {
                   setShowVariantModal(true);
                 } else {
                   handleAddToCart(e);

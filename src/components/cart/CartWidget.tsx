@@ -267,6 +267,9 @@ export const CartWidget: React.FC = () => {
                           {item.variant && (
                             <p className="text-sm text-gray-500">{item.variant.title}</p>
                           )}
+                          {item.customization && (
+                            <p className="text-xs font-medium text-pink-600">Shade request saved · {item.customization.tiktok_handle}</p>
+                          )}
                           <p className="text-pink-400 font-bold">{formatPrice(item.price)}</p>
                           
                           <div className="flex items-center gap-2 mt-2">
@@ -279,7 +282,9 @@ export const CartWidget: React.FC = () => {
                             <span className="w-8 text-center">{item.quantity}</span>
                             <button
                               onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                              className="p-1 hover:bg-gray-100 rounded"
+                              disabled={Boolean(item.customization)}
+                              title={item.customization ? 'One jar per shade request' : undefined}
+                              className="p-1 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                             >
                               <Plus className="h-4 w-4" />
                             </button>
