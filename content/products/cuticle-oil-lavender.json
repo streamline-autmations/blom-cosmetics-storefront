@@ -1,0 +1,13 @@
+{
+  "ref": "refs/heads/add-cuticle-oil-lavender",
+  "node_id": "REF_kwDOP5VWldoAI3JlZnMvaGVhZHMvYWRkLWN1dGljbGUtb2lsLWxhdmVuZGVy",
+  "url": "https://api.github.com/repos/streamlinebuilds-2/blom-cosmetics-main/git/refs/heads/add-cuticle-oil-lavender",
+  "object": {
+    "sha": "c3f28e02c46807c61dd8163751bddab3ef62d0ce",
+    "type": "commit",
+    "url": "https://api.github.com/repos/streamlinebuilds-2/blom-cosmetics-main/git/commits/c3f28e02c46807c61dd8163751bddab3ef62d0ce"
+  },
+  "slug": "cuticle-oil-lavender",
+  "updatedAt": "2025-10-15T15:23:02.818Z",
+  "createdAt": "2025-10-15T15:23:02.818Z"
+}

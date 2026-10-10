@@ -1,0 +1,12 @@
+{
+  "error": {
+    "message": "Your request is invalid or could not be processed by the service",
+    "timestamp": 1761768696998,
+    "name": "NodeApiError",
+    "description": "Reference already exists",
+    "context": {}
+  },
+  "slug": "cuticle-oil-lavender",
+  "updatedAt": "2025-10-29T20:11:37.011Z",
+  "createdAt": "2025-10-29T20:11:37.011Z"
+}
