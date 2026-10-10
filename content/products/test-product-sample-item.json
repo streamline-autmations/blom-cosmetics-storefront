@@ -1,0 +1,13 @@
+{
+  "ref": "refs/heads/add-test-product-sample-item",
+  "node_id": "REF_kwDOP5VWldoAJ3JlZnMvaGVhZHMvYWRkLXRlc3QtcHJvZHVjdC1zYW1wbGUtaXRlbQ",
+  "url": "https://api.github.com/repos/streamlinebuilds-2/blom-cosmetics-main/git/refs/heads/add-test-product-sample-item",
+  "object": {
+    "sha": "17450a11dc7dc5dfaf81d06eae80f12aa6ef7527",
+    "type": "commit",
+    "url": "https://api.github.com/repos/streamlinebuilds-2/blom-cosmetics-main/git/commits/17450a11dc7dc5dfaf81d06eae80f12aa6ef7527"
+  },
+  "slug": "test-product-sample-item",
+  "updatedAt": "2025-10-16T06:19:57.976Z",
+  "createdAt": "2025-10-16T06:19:57.976Z"
+}
