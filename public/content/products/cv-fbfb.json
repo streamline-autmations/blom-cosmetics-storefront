@@ -1,0 +1,12 @@
+{
+  "error": {
+    "message": "Your request is invalid or could not be processed by the service",
+    "timestamp": 1762186565568,
+    "name": "NodeApiError",
+    "description": "Reference already exists",
+    "context": {}
+  },
+  "slug": "cv-fbfb",
+  "updatedAt": "2025-11-03T16:16:05.574Z",
+  "createdAt": "2025-11-03T16:16:05.574Z"
+}
