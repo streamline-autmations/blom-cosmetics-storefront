@@ -138,7 +138,7 @@ export const CourseDetailPage: React.FC = () => {
             '6–10 April 2027',
             '9–13 July 2027',
             '22–26 August 2027',
-            '1–5 November 2027'
+            '28 November–2 December 2027'
           ]
         },
         {
@@ -252,7 +252,7 @@ export const CourseDetailPage: React.FC = () => {
         '6–10 April 2027',
         '9–13 July 2027',
         '22–26 August 2027',
-        '1–5 November 2027'
+        '28 November–2 December 2027'
       ],
       thingsToBring: [
         'Your own refreshments and lunch (coffee and tea will be provided daily)',
