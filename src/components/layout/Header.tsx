@@ -11,6 +11,7 @@ import { BirthdayBundlePopup } from './BirthdayBundlePopup';
 import { WomensDayPopup } from './WomensDayPopup';
 import { CatEyeSpecialsPopup } from './CatEyeSpecialsPopup';
 import { StarterPackPopup } from './StarterPackPopup';
+import { CreatedForYouPopup } from './CreatedForYouPopup';
 
 interface HeaderProps {
   showMobileMenu?: boolean;
@@ -65,6 +66,8 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
       <AnnouncementBar />
       <AnnouncementSignup />
       {/* Nude Cat Eye launch is the current live promo; it claims the visit ahead of the seasonal/restock popups. */}
+      {/* Created For You TikTok Live is mounted first so it claims the visit ahead of Starter Pack. */}
+      <CreatedForYouPopup />
       <StarterPackPopup />
       <CatEyeSpecialsPopup />
       <WomensDayPopup />
