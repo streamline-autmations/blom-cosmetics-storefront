@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container } from './Container';
 import { User, Menu, X, Minus, Plus, Search, ChevronDown } from 'lucide-react';
-import { SHOP_CATEGORY_TREE, ShopCategory } from '../../lib/shopCategories';
+import { SHOP_CATEGORY_TREE, ShopCategory, categoryPath } from '../../lib/shopCategories';
 import { CartButton } from '../cart/CartButton';
 import { WishlistButton } from '../wishlist/WishlistButton';
 import { AnnouncementSignup } from './AnnouncementSignup';
@@ -27,6 +27,8 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
   // Mobile Accordion State for Shop (and which category groups are open inside it)
   const [isShopExpanded, setIsShopExpanded] = useState(false);
   const [openMobileGroups, setOpenMobileGroups] = useState<string[]>([]);
+  const toggleMobileGroup = (slug: string) =>
+    setOpenMobileGroups((prev) => (prev.includes(slug) ? prev.filter((s) => s !== slug) : [...prev, slug]));
 
   // Site-wide search: jumps to the shop with the query applied
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -98,6 +100,15 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
 
   const currentPath = location.pathname.replace(/\/$/, '') || '/';
   const currentCategory = new URLSearchParams(location.search).get('category') || 'all';
+
+  // Opening the menu on a category page unfolds the menu to that category.
+  useEffect(() => {
+    if (!isMobileMenuOpen || currentPath !== '/shop') return;
+    const trail = categoryPath(currentCategory).slice(0, -1).map((c) => c.slug);
+    if (trail.length === 0) return;
+    setIsShopExpanded(true);
+    setOpenMobileGroups((prev) => Array.from(new Set([...prev, ...trail])));
+  }, [isMobileMenuOpen, currentPath, currentCategory]);
 
   return (
     <>
@@ -333,9 +344,7 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
                                     {node.children && (
                                       <button
                                         type="button"
-                                        onClick={() => setOpenMobileGroups((prev) =>
-                                          prev.includes(node.slug) ? prev.filter((s) => s !== node.slug) : [...prev, node.slug]
-                                        )}
+                                        onClick={() => toggleMobileGroup(node.slug)}
                                         aria-expanded={groupOpen}
                                         aria-label={`${groupOpen ? 'Hide' : 'Show'} ${node.name} types`}
                                         className="p-3 text-gray-500 rounded-lg hover:bg-pink-50"
@@ -346,31 +355,52 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
                                   </div>
                                   {node.children && groupOpen && (
                                     <div className="ml-6 mb-1 border-l-2 border-pink-100">
-                                      {node.children.map((child) => (
-                                        <React.Fragment key={child.slug}>
-                                          <a
-                                            href={categoryHref(child.slug)}
-                                            className={`block py-2.5 pl-4 text-sm rounded-r-md transition-colors ${
-                                              currentPath === '/shop' && currentCategory === child.slug ? 'text-pink-700 bg-pink-50 font-medium' : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50'
-                                            }`}
-                                            onClick={(e) => handleNavClick(e, categoryHref(child.slug))}
-                                          >
-                                            {child.name}
-                                          </a>
-                                          {child.children?.map((grandchild) => (
-                                            <a
-                                              key={grandchild.slug}
-                                              href={categoryHref(grandchild.slug)}
-                                              className={`block py-2 pl-8 text-[13px] rounded-r-md transition-colors ${
-                                                currentPath === '/shop' && currentCategory === grandchild.slug ? 'text-pink-700 bg-pink-50 font-medium' : 'text-gray-500 hover:text-pink-600 hover:bg-pink-50'
-                                              }`}
-                                              onClick={(e) => handleNavClick(e, categoryHref(grandchild.slug))}
-                                            >
-                                              {grandchild.name}
-                                            </a>
-                                          ))}
-                                        </React.Fragment>
-                                      ))}
+                                      {node.children.map((child) => {
+                                        const childOpen = openMobileGroups.includes(child.slug);
+                                        return (
+                                          <div key={child.slug}>
+                                            <div className="flex items-center">
+                                              <a
+                                                href={categoryHref(child.slug)}
+                                                className={`flex-1 block py-2.5 pl-4 text-sm rounded-r-md transition-colors ${
+                                                  currentPath === '/shop' && currentCategory === child.slug ? 'text-pink-700 bg-pink-50 font-medium' : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50'
+                                                }`}
+                                                onClick={(e) => handleNavClick(e, categoryHref(child.slug))}
+                                              >
+                                                {child.name}
+                                              </a>
+                                              {child.children && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => toggleMobileGroup(child.slug)}
+                                                  aria-expanded={childOpen}
+                                                  aria-label={`${childOpen ? 'Hide' : 'Show'} ${child.name} types`}
+                                                  className="p-2.5 mr-1 text-gray-500 rounded-lg hover:bg-pink-50"
+                                                >
+                                                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${childOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+                                              )}
+                                            </div>
+                                            {child.children && childOpen && (
+                                              <div className="ml-4 my-1 mr-2 rounded-lg bg-pink-50/60 py-1">
+                                                {child.children.map((grandchild) => (
+                                                  <a
+                                                    key={grandchild.slug}
+                                                    href={categoryHref(grandchild.slug)}
+                                                    className={`flex items-center gap-2 py-2 px-3 text-[13px] rounded-md transition-colors ${
+                                                      currentPath === '/shop' && currentCategory === grandchild.slug ? 'text-pink-700 font-semibold' : 'text-gray-600 hover:text-pink-600'
+                                                    }`}
+                                                    onClick={(e) => handleNavClick(e, categoryHref(grandchild.slug))}
+                                                  >
+                                                    <span className="w-1 h-1 rounded-full bg-pink-300" aria-hidden />
+                                                    {grandchild.name}
+                                                  </a>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>

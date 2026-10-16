@@ -11,14 +11,18 @@ interface NavProps {
 const visible = (nodes: ShopCategory[] | undefined, counts: Record<string, number>) =>
   (nodes || []).filter((node) => (counts[node.slug] || 0) > 0);
 
+type ChipItem = { slug: string; label: string; count?: number; hasChildren?: boolean };
+type Row = { key: string; label: string; active: string; items: ChipItem[] };
+
 /**
  * Mobile: one scrollable row of main categories. Picking one with sub-categories
- * reveals a second row (and a third for Colour Acrylics), so shoppers only ever
- * see the choices that matter for where they are.
+ * reveals a second row of chips. A third level (Colour Acrylics -> Standard /
+ * Glitter / Exclusive) is a dropdown instead, so it reads as "inside" the chip
+ * above it rather than as another identical row.
  */
 export const CategoryChipRows: React.FC<NavProps> = ({ selected, counts, onSelect }) => {
   const path = categoryPath(selected);
-  const rows: { key: string; label: string; active: string; items: { slug: string; label: string; count?: number }[] }[] = [
+  const rows: Row[] = [
     {
       key: 'root',
       label: 'Categories',
@@ -39,22 +43,62 @@ export const CategoryChipRows: React.FC<NavProps> = ({ selected, counts, onSelec
       active: path[depth + 1]?.slug || node.slug,
       items: [
         { slug: node.slug, label: `All ${node.name}`, count: counts[node.slug] },
-        ...children.map((child) => ({ slug: child.slug, label: child.shortName || child.name, count: counts[child.slug] })),
+        ...children.map((child) => ({
+          slug: child.slug,
+          label: child.shortName || child.name,
+          count: counts[child.slug],
+          hasChildren: visible(child.children, counts).length > 0,
+        })),
       ],
     });
   });
 
   return (
     <div className="space-y-2">
-      {rows.map((row, depth) => (
-        <ChipRow key={row.key} row={row} depth={depth} onSelect={onSelect} />
-      ))}
+      {rows.map((row, depth) =>
+        depth >= 2 ? (
+          <TypeSelect key={row.key} row={row} onSelect={onSelect} />
+        ) : (
+          <ChipRow key={row.key} row={row} depth={depth} onSelect={onSelect} />
+        )
+      )}
+    </div>
+  );
+};
+
+/** Third level as a native dropdown: opens the phone's own picker, which is the easiest control to use. */
+const TypeSelect: React.FC<{ row: Row; onSelect: (slug: string) => void }> = ({ row, onSelect }) => {
+  const id = `type-select-${row.key}`;
+  const narrowed = row.active !== row.key;
+  return (
+    <div className="flex items-center gap-3 pt-0.5">
+      <label htmlFor={id} className="shrink-0 text-[13px] font-medium text-gray-500">
+        {row.label.replace(/ Acrylics$/, '')} type
+      </label>
+      <div className="relative flex-1 max-w-[16rem]">
+        <select
+          id={id}
+          value={row.active}
+          onChange={(e) => onSelect(e.target.value)}
+          className={`w-full h-10 appearance-none rounded-lg border pl-3 pr-9 text-base font-medium focus:outline-none focus:ring-2 focus:ring-pink-300 ${
+            narrowed ? 'border-pink-400 bg-pink-50 text-pink-700' : 'border-gray-300 bg-white text-gray-800'
+          }`}
+        >
+          {row.items.map((item) => (
+            <option key={item.slug} value={item.slug}>
+              {item.slug === row.key ? 'All' : item.label}
+              {item.count !== undefined ? ` (${item.count})` : ''}
+            </option>
+          ))}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" aria-hidden />
+      </div>
     </div>
   );
 };
 
 const ChipRow: React.FC<{
-  row: { label: string; active: string; items: { slug: string; label: string; count?: number }[] };
+  row: Row;
   depth: number;
   onSelect: (slug: string) => void;
 }> = ({ row, depth, onSelect }) => {
@@ -98,6 +142,9 @@ const ChipRow: React.FC<{
             {item.label}
             {item.count !== undefined && (
               <span className={`ml-1.5 tabular-nums ${active ? 'text-pink-500' : 'text-gray-400'}`}>{item.count}</span>
+            )}
+            {item.hasChildren && (
+              <ChevronDown className={`inline-block w-3.5 h-3.5 ml-1 -mt-0.5 ${active ? 'text-pink-500' : 'text-gray-400'}`} aria-hidden />
             )}
           </button>
         );
