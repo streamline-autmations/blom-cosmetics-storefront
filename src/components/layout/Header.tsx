@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Container } from './Container';
-import { User, Menu, X, Minus, Plus } from 'lucide-react';
+import { User, Menu, X, Minus, Plus, Search, ChevronDown } from 'lucide-react';
+import { SHOP_CATEGORY_TREE, ShopCategory } from '../../lib/shopCategories';
 import { CartButton } from '../cart/CartButton';
 import { WishlistButton } from '../wishlist/WishlistButton';
 import { AnnouncementSignup } from './AnnouncementSignup';
@@ -23,8 +24,26 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [logoFailed, setLogoFailed] = useState(false);
   
-  // Mobile Accordion State for Shop
+  // Mobile Accordion State for Shop (and which category groups are open inside it)
   const [isShopExpanded, setIsShopExpanded] = useState(false);
+  const [openMobileGroups, setOpenMobileGroups] = useState<string[]>([]);
+
+  // Site-wide search: jumps to the shop with the query applied
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearchOpen) searchInputRef.current?.focus();
+  }, [isSearchOpen]);
+
+  const submitSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const query = searchQuery.trim();
+    setIsSearchOpen(false);
+    setIsMobileMenuOpen(false);
+    navigate(query ? `/shop?q=${encodeURIComponent(query)}` : '/shop');
+  };
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     if (href.startsWith('http')) return;
@@ -48,15 +67,34 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
     { name: 'Contact', href: '/contact' }
   ];
 
-  const shopCategories = [
-    { name: 'Shop All', href: '/shop' },
-    { name: 'Acrylic System', href: '/shop?category=acrylic-system' },
-    { name: 'Bundle Deals', href: '/shop?category=bundle-deals' },
-    { name: 'Gel System', href: '/shop?category=gel-system' },
-    { name: 'Prep & Finishing', href: '/shop?category=prep-finishing' },
-    { name: 'Tools & Essentials', href: '/shop?category=tools-essentials' },
-    { name: 'Furniture', href: '/shop?category=furniture' }
-  ];
+  const categoryHref = (slug: string) => `/shop?category=${slug}`;
+  const shopGroups = SHOP_CATEGORY_TREE.filter((node) => node.children?.length);
+  const shopSingles = SHOP_CATEGORY_TREE.filter((node) => !node.children?.length);
+
+  // Closes the hover/focus dropdown after a choice (focus would otherwise keep it open).
+  const handleMenuChoice = (e: React.MouseEvent, href: string) => {
+    handleNavClick(e, href);
+    (document.activeElement as HTMLElement | null)?.blur();
+  };
+
+  const renderMegaLinks = (nodes: ShopCategory[], depth = 0): React.ReactNode => (
+    <ul className={depth === 0 ? 'space-y-1' : 'mt-1 mb-1.5 ml-1 pl-3 border-l border-pink-100 space-y-0.5'}>
+      {nodes.map((node) => (
+        <li key={node.slug}>
+          <a
+            href={categoryHref(node.slug)}
+            onClick={(e) => handleMenuChoice(e, categoryHref(node.slug))}
+            className={`block rounded py-1 transition-colors hover:text-pink-600 focus-visible:outline-none focus-visible:text-pink-600 focus-visible:underline ${
+              depth === 0 ? 'text-sm text-gray-700' : 'text-[13px] text-gray-500'
+            }`}
+          >
+            {node.name}
+          </a>
+          {node.children && renderMegaLinks(node.children, depth + 1)}
+        </li>
+      ))}
+    </ul>
+  );
 
   const currentPath = location.pathname.replace(/\/$/, '') || '/';
   const currentCategory = new URLSearchParams(location.search).get('category') || 'all';
@@ -117,8 +155,15 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
             <nav className="hidden lg:flex items-center gap-8 flex-1 justify-center">
               {navigationItems.map((item) => {
                 const isActive = currentPath === item.href;
+                const isShop = item.name === 'Shop';
                 return (
-                  <div key={item.name} className="relative group">
+                  <div
+                    key={item.name}
+                    className="relative group"
+                    onKeyDown={isShop ? (e) => {
+                      if (e.key === 'Escape') (document.activeElement as HTMLElement | null)?.blur();
+                    } : undefined}
+                  >
                     <a
                       href={item.href}
                       className={`px-1 py-2 text-sm font-semibold transition-colors duration-200 relative ${
@@ -129,17 +174,60 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
                       onClick={(e) => handleNavClick(e, item.href)}
                     >
                       {item.name}
+                      {isShop && <ChevronDown className="inline-block w-3.5 h-3.5 ml-0.5 -mt-0.5 transition-transform duration-200 group-hover:rotate-180" aria-hidden />}
                       <span className={`absolute bottom-0 left-0 h-px bg-pink-500 transition-all duration-200 ${
                         isActive ? 'w-full' : 'w-0 group-hover:w-full'
                       }`} />
                     </a>
+                    {isShop && (
+                      <div className="absolute left-1/2 -translate-x-1/2 top-full pt-4 invisible opacity-0 translate-y-1 transition-all duration-150 group-hover:visible group-hover:opacity-100 group-hover:translate-y-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0">
+                        <div className="w-[640px] rounded-xl border border-gray-100 bg-white shadow-xl shadow-pink-900/5 p-6 grid grid-cols-3 gap-8">
+                          {shopGroups.map((group) => (
+                            <div key={group.slug}>
+                              <a
+                                href={categoryHref(group.slug)}
+                                onClick={(e) => handleMenuChoice(e, categoryHref(group.slug))}
+                                className="block mb-2 text-xs font-bold uppercase tracking-[0.18em] text-pink-600 hover:text-pink-700 focus-visible:outline-none focus-visible:underline"
+                              >
+                                {group.name}
+                              </a>
+                              {renderMegaLinks(group.children || [])}
+                            </div>
+                          ))}
+                          <div>
+                            <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-pink-600">More</p>
+                            {renderMegaLinks(shopSingles)}
+                            <a
+                              href="/shop"
+                              onClick={(e) => handleMenuChoice(e, '/shop')}
+                              className="inline-block mt-4 text-sm font-semibold text-gray-900 underline underline-offset-4 decoration-pink-300 hover:decoration-pink-600 focus-visible:outline-none focus-visible:decoration-pink-600"
+                            >
+                              Shop all products
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </nav>
 
             {/* Action Icons - Right side */}
-            <div className="flex items-center gap-2 md:gap-3">
+            <div className="flex items-center gap-1 md:gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  setIsSearchOpen((open) => !open);
+                }}
+                className="p-2 text-gray-700 hover:text-pink-700 transition-colors"
+                aria-label={isSearchOpen ? 'Close search' : 'Search products'}
+                aria-expanded={isSearchOpen}
+                aria-controls="site-search"
+              >
+                {isSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              </button>
               <a
                 href="/account"
                 className="p-2 text-gray-700 hover:text-pink-700 transition-colors"
@@ -152,6 +240,32 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
             </div>
           </div>
         </Container>
+
+        {isSearchOpen && (
+          <div id="site-search" className="border-t border-gray-100 bg-white">
+            <Container>
+              <form role="search" onSubmit={submitSearch} className="flex items-center gap-2 py-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Escape' && setIsSearchOpen(false)}
+                    placeholder="Search products or shade code, e.g. E005"
+                    aria-label="Search products"
+                    enterKeyHint="search"
+                    className="w-full pl-10 pr-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300"
+                  />
+                </div>
+                <button type="submit" className="px-4 py-2.5 rounded-xl bg-pink-600 text-white text-sm font-semibold hover:bg-pink-700 transition-colors">
+                  Search
+                </button>
+              </form>
+            </Container>
+          </div>
+        )}
 
         {/* Mobile Navigation */}
         {showMobileMenu && (
@@ -187,65 +301,79 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
 
                         <div
                           className={`overflow-hidden transition-all duration-300 ${
-                            isShopExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                            isShopExpanded ? 'max-h-[1600px] opacity-100' : 'max-h-0 opacity-0'
                           }`}
                         >
-                          <div className="py-2">
-                            {shopCategories.map((subItem, subIndex) => {
-                              // Special handling for Acrylic System with collapsible logic
-                              if (subItem.name === 'Acrylic System') {
-                                // To make it collapsible, we'd need another state variable.
-                                // Given the user request is just "open up subcategories", showing them inline is the most direct fix.
-                                
-                                return (
-                                  <div key={subIndex} className="block">
-                                    <div className="flex items-center justify-between px-4 mx-4 rounded-lg hover:bg-pink-50 transition-colors">
-                                      <a
-                                        href={subItem.href}
-                                        className="flex-1 py-2.5 text-sm text-gray-600"
-                                        onClick={(e) => handleNavClick(e, subItem.href)}
-                                      >
-                                        {subItem.name}
-                                      </a>
-                                    </div>
-                                    
-                                    {/* Subcategories always visible for now to ensure accessibility */}
-                                    <div className="flex flex-col ml-12 border-l-2 border-pink-100 my-1 space-y-1">
-                                       <a 
-                                         href="/shop?category=core-acrylics"
-                                         className="py-2 pl-4 text-xs font-medium text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-r-md transition-colors block"
-                                         onClick={(e) => handleNavClick(e, '/shop?category=core-acrylics')}
-                                       >
-                                         Core Acrylics
-                                       </a>
-                                       <a 
-                                         href="/shop?category=coloured-acrylics"
-                                         className="py-2 pl-4 text-xs font-medium text-gray-500 hover:text-pink-600 hover:bg-pink-50 rounded-r-md transition-colors block"
-                                         onClick={(e) => handleNavClick(e, '/shop?category=coloured-acrylics')}
-                                       >
-                                         Coloured Acrylics
-                                       </a>
-                                    </div>
-                                  </div>
-                                );
-                              }
-
-                              const subCategory = new URLSearchParams(subItem.href.split('?')[1] || '').get('category') || 'all';
-                              const subActive = currentPath === '/shop' && currentCategory === subCategory;
-
+                          <div className="py-1 px-4">
+                            <a
+                              href="/shop"
+                              className={`block py-3 px-4 text-[15px] font-semibold rounded-lg transition-colors ${
+                                currentPath === '/shop' && currentCategory === 'all' ? 'bg-pink-50 text-pink-700' : 'text-gray-900 hover:bg-pink-50'
+                              }`}
+                              onClick={(e) => handleNavClick(e, '/shop')}
+                            >
+                              Shop All
+                            </a>
+                            {SHOP_CATEGORY_TREE.map((node) => {
+                              const href = categoryHref(node.slug);
+                              const subActive = currentPath === '/shop' && currentCategory === node.slug;
+                              const groupOpen = openMobileGroups.includes(node.slug);
                               return (
-                                <a
-                                  key={subIndex}
-                                  href={subItem.href}
-                                  className={`block py-2.5 px-10 text-sm rounded-lg mx-4 transition-colors ${
-                                    subActive
-                                      ? 'bg-pink-50 text-pink-700'
-                                      : 'text-gray-600 hover:bg-pink-50 hover:text-gray-900'
-                                  }`}
-                                  onClick={(e) => handleNavClick(e, subItem.href)}
-                                >
-                                  {subItem.name}
-                                </a>
+                                <div key={node.slug}>
+                                  <div className="flex items-center">
+                                    <a
+                                      href={href}
+                                      className={`flex-1 block py-3 px-4 text-[15px] rounded-lg transition-colors ${
+                                        subActive ? 'bg-pink-50 text-pink-700 font-medium' : 'text-gray-700 hover:bg-pink-50'
+                                      }`}
+                                      onClick={(e) => handleNavClick(e, href)}
+                                    >
+                                      {node.name}
+                                    </a>
+                                    {node.children && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setOpenMobileGroups((prev) =>
+                                          prev.includes(node.slug) ? prev.filter((s) => s !== node.slug) : [...prev, node.slug]
+                                        )}
+                                        aria-expanded={groupOpen}
+                                        aria-label={`${groupOpen ? 'Hide' : 'Show'} ${node.name} types`}
+                                        className="p-3 text-gray-500 rounded-lg hover:bg-pink-50"
+                                      >
+                                        <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${groupOpen ? 'rotate-180' : ''}`} />
+                                      </button>
+                                    )}
+                                  </div>
+                                  {node.children && groupOpen && (
+                                    <div className="ml-6 mb-1 border-l-2 border-pink-100">
+                                      {node.children.map((child) => (
+                                        <React.Fragment key={child.slug}>
+                                          <a
+                                            href={categoryHref(child.slug)}
+                                            className={`block py-2.5 pl-4 text-sm rounded-r-md transition-colors ${
+                                              currentPath === '/shop' && currentCategory === child.slug ? 'text-pink-700 bg-pink-50 font-medium' : 'text-gray-600 hover:text-pink-600 hover:bg-pink-50'
+                                            }`}
+                                            onClick={(e) => handleNavClick(e, categoryHref(child.slug))}
+                                          >
+                                            {child.name}
+                                          </a>
+                                          {child.children?.map((grandchild) => (
+                                            <a
+                                              key={grandchild.slug}
+                                              href={categoryHref(grandchild.slug)}
+                                              className={`block py-2 pl-8 text-[13px] rounded-r-md transition-colors ${
+                                                currentPath === '/shop' && currentCategory === grandchild.slug ? 'text-pink-700 bg-pink-50 font-medium' : 'text-gray-500 hover:text-pink-600 hover:bg-pink-50'
+                                              }`}
+                                              onClick={(e) => handleNavClick(e, categoryHref(grandchild.slug))}
+                                            >
+                                              {grandchild.name}
+                                            </a>
+                                          ))}
+                                        </React.Fragment>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
                               );
                             })}
                           </div>

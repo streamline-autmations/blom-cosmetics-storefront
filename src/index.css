@@ -59,6 +59,16 @@ button {
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  /* Horizontally scrollable rows (shop category chips) without a visible scrollbar */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* ========================================
    GLOBAL HEADING STYLES
    ======================================== */

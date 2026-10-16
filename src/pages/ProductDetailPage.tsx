@@ -24,6 +24,7 @@ import {
 import { useToast } from '../components/ui/use-toast';
 import { ProductCard } from '../components/ProductCard';
 import { isBundleInStock } from '../lib/stockAvailability';
+import { categorizeProduct, primaryCategoryPath } from '../lib/shopCategories';
 import { PaymentMethods } from '../components/payment/PaymentMethods';
 import { ShadeRequestForm } from '../components/product/ShadeRequestForm';
 import { emptyShadeRequest, sanitizeShadeRequest, validateShadeRequest, ShadeRequest, ShadeRequestErrors } from '../lib/shadeRequest';
@@ -478,114 +479,23 @@ export const ProductDetailPage: React.FC = () => {
     window.scrollTo(0, 0);
   }, [slug]);
 
-  const categoryDetails = useMemo(() => {
-    if (!product) return { name: 'Shop', slug: 'all' };
-    
-    // Safe category string - handle array or string
+  // Breadcrumb trail from the shared shop category tree, e.g. Acrylics > Colour Acrylics > Exclusive Acrylics
+  const breadcrumbPath = useMemo(() => {
+    if (!product) return [];
     const categoryVal = product.category;
-    let categoryStr = '';
-    
-    if (Array.isArray(categoryVal)) {
-        categoryStr = categoryVal[0] || '';
-    } else {
-        categoryStr = (categoryVal || '').toString();
-    }
-    
+    const categoryStr = (Array.isArray(categoryVal) ? categoryVal[0] || '' : (categoryVal || '')).toString();
     const categoryLower = categoryStr.toLowerCase();
-
-    // Check for Bundle Deals first (highest priority for these items)
-    const isBundle = product.isBundle || 
-                     (categoryStr && (
-                       categoryStr === 'bundle-deals' || 
-                       categoryStr === 'Bundle Deals' ||
-                       categoryLower.includes('collection') ||
-                       categoryLower.includes('bundle')
-                     ));
-
-    if (isBundle) {
-      return { name: 'Bundle Deals', slug: 'bundle-deals' };
+    if (product.isBundle || categoryLower.includes('bundle') || categoryLower.includes('collection')) {
+      return [{ slug: 'bundle-deals', name: 'Bundle Deals' }];
     }
-
-    // Default category handling
-    let slug = categoryStr || 'all';
-    
-    // Normalize if needed
-    const map: Record<string, string> = {
-      'Acrylic System': 'acrylic-system',
-      'Prep & Finish': 'prep-finishing',
-      'Prep & Finishing': 'prep-finishing',
-      'Gel System': 'gel-system',
-      'Tools & Essentials': 'tools-essentials',
-      'Furniture': 'furniture',
-      'Coming Soon': 'coming-soon'
-    };
-    
-    if (map[slug]) slug = map[slug];
-    else slug = slug.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
-    
-    // Explicit name overrides
-    const nameOverrides: Record<string, string> = {
-      'prep-finishing': 'Prep & Finishing',
-      'tools-essentials': 'Tools & Essentials'
-    };
-
-    // Generate display name
-    const name = nameOverrides[slug] || slug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    
-    return { name, slug };
+    const tags = Array.isArray((product as any).tags) ? (product as any).tags.map((t: any) => String(t)) : [];
+    return primaryCategoryPath(categorizeProduct(product.name || '', [categoryStr, ...tags]));
   }, [product]);
-
-  const subcategoryDetails = useMemo(() => {
-    if (!product) return null;
-
-    const normalize = (category: string): string => {
-      const map: Record<string, string> = {
-        'Bundle Deals': 'bundle-deals',
-        'Acrylic System': 'acrylic-system',
-        'Core Acrylics': 'core-acrylics',
-        'Coloured Acrylics': 'coloured-acrylics',
-        'Prep & Finish': 'prep-finishing',
-        'Prep & Finishing': 'prep-finishing',
-        'Gel System': 'gel-system',
-        'Tools & Essentials': 'tools-essentials',
-        'Furniture': 'furniture',
-        'Coming Soon': 'coming-soon'
-      };
-      return map[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
-    };
-
-    const nameLower = (product.name || '').toLowerCase();
-    const tags = Array.isArray((product as any).tags) ? (product as any).tags : [];
-    const tagSlugs = tags.map((t: any) => normalize(String(t))).filter(Boolean);
-
-    const isSizedNailLiquid =
-      nameLower.includes('nail liquid') && (nameLower.includes('250ml') || nameLower.includes('500ml'));
-    if (isSizedNailLiquid) return null;
-
-    if (tagSlugs.includes('core-acrylics')) return { name: 'Core Acrylics', slug: 'core-acrylics' };
-    if (tagSlugs.includes('coloured-acrylics')) return { name: 'Coloured Acrylics', slug: 'coloured-acrylics' };
-
-    if (categoryDetails.slug !== 'acrylic-system') return null;
-
-    const has56g = /\b56\s?g\b/.test(nameLower);
-    const isExplicitColouredAcrylic =
-      nameLower.includes('colour acrylic') ||
-      nameLower.includes('color acrylic') ||
-      nameLower.includes('colour acrylics') ||
-      nameLower.includes('color acrylics');
-
-    if (isExplicitColouredAcrylic) return { name: 'Coloured Acrylics', slug: 'coloured-acrylics' };
-    if (has56g || nameLower.includes('core acrylic') || nameLower.includes('core acrylics')) {
-      return { name: 'Core Acrylics', slug: 'core-acrylics' };
-    }
-
-    return null;
-  }, [product, categoryDetails.slug]);
 
   const shopLinkTarget = useMemo(() => {
     try {
       const last = sessionStorage.getItem('shopLastCategory');
-      if (last && last !== 'all') return `/shop#${last}`;
+      if (last && last !== 'all') return `/shop?category=${encodeURIComponent(last)}`;
     } catch {
       return '/shop';
     }
@@ -768,38 +678,25 @@ export const ProductDetailPage: React.FC = () => {
       <main className="pt-8 pb-16">
         {/* Breadcrumbs */}
         <Container className="mb-6">
-          <nav className="flex items-center text-sm text-gray-500">
+          <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-y-1 text-sm text-gray-500">
             <Link to="/" className="hover:text-pink-500 transition-colors">Home</Link>
             <span className="mx-2">/</span>
             <Link to={shopLinkTarget} className="hover:text-pink-500 transition-colors">Shop</Link>
             
-            {/* Dynamic Category Breadcrumb */}
-            {categoryDetails.slug !== 'all' && (
-              <>
-                <span className="mx-2">/</span>
-                <Link 
-                  to={`/shop#${categoryDetails.slug}`} 
-                  className="hover:text-pink-500 transition-colors"
-                  onClick={() => sessionStorage.removeItem('shopScrollY')} // Reset scroll when explicitly navigating to category
-                >
-                  {categoryDetails.name}
-                </Link>
-              </>
-            )}
-
-            {subcategoryDetails && (
-              <>
+            {/* Category breadcrumb */}
+            {breadcrumbPath.map((crumb) => (
+              <React.Fragment key={crumb.slug}>
                 <span className="mx-2">/</span>
                 <Link
-                  to={`/shop#${subcategoryDetails.slug}`}
-                  className="hover:text-pink-500 transition-colors"
-                  onClick={() => sessionStorage.removeItem('shopScrollY')}
+                  to={`/shop?category=${crumb.slug}`}
+                  className="hover:text-pink-500 transition-colors whitespace-nowrap"
+                  onClick={() => sessionStorage.removeItem('shopScrollY')} // Reset scroll when explicitly navigating to category
                 >
-                  {subcategoryDetails.name}
+                  {crumb.name}
                 </Link>
-              </>
-            )}
-            
+              </React.Fragment>
+            ))}
+
             <span className="mx-2">/</span>
             <span className="text-gray-900 font-medium truncate max-w-[200px]">{product.name}</span>
           </nav>

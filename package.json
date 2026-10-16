@@ -13,10 +13,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "test": "npm run test:promotion && npm run test:cateye && npm run test:shipping",
+    "test": "npm run test:promotion && npm run test:cateye && npm run test:shipping && npm run test:categories",
     "test:promotion": "tsx --test src/lib/womensDayPromotion.test.ts",
     "test:cateye": "tsx --test src/lib/catEyeTwoForOffer.test.ts",
     "test:shipping": "tsx --test src/lib/shipping.test.ts",
+    "test:categories": "tsx --test src/lib/shopCategories.test.ts",
     "check": "npm run typecheck && npm run lint && npm run test",
     "seed:products": "tsx scripts/seed-products.ts"
   },

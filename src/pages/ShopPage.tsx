@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { Container } from '../components/layout/Container';
@@ -11,11 +11,20 @@ import { PageLoadingSpinner } from '../components/ui/LoadingSpinner';
 import { supabase, supabaseConfigured } from '../lib/supabase';
 import { RangeSlider } from '../components/ui/RangeSlider';
 import { CatEyeShopBanner } from '../components/layout/CatEyeShopBanner';
+import { CategoryChipRows, CategorySidebarTree } from '../components/shop/ShopCategoryNav';
+import {
+  categorizeProduct,
+  categoryLabel,
+  categoryPath,
+  productMatchesSearch,
+  toCategorySlug,
+} from '../lib/shopCategories';
 
 // Discount system disabled
 
 export const ShopPage: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   
@@ -43,13 +52,27 @@ export const ShopPage: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []); // Remove viewMode dependency to avoid loop, let internal logic handle it
 
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // The URL is the source of truth for the category, so back/forward and shared links work.
+  // `?q=` comes from the header search.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const categoryParam = params.get('category');
-    setSelectedCategory(categoryParam || 'all');
+    setSelectedCategory(categoryParam ? toCategorySlug(categoryParam) : 'all');
+    const query = params.get('q');
+    if (query !== null) setSearchTerm(query);
   }, [location.search]);
 
-  const [searchTerm, setSearchTerm] = useState('');
+  const selectCategory = (slug: string) => {
+    const params = new URLSearchParams(location.search);
+    params.delete('q');
+    if (slug === 'all') params.delete('category');
+    else params.set('category', slug);
+    const search = params.toString() ? `?${params.toString()}` : '';
+    if (search === location.search) return; // already there; don't stack duplicate history entries
+    navigate({ pathname: '/shop', search });
+  };
   const [sortBy, setSortBy] = useState('featured');
   const [showInStockOnly, setShowInStockOnly] = useState(false);
   
@@ -57,17 +80,6 @@ export const ShopPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [expandedFilterSection, setExpandedFilterSection] = useState<string | null>('price');
-  const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
-
-  // Auto-expand Acrylic System if a subcategory is selected
-  useEffect(() => {
-    if (selectedCategory === 'core-acrylics' || selectedCategory === 'coloured-acrylics') {
-      setExpandedCategories(prev => {
-        if (!prev.includes('acrylic-system')) return [...prev, 'acrylic-system'];
-        return prev;
-      });
-    }
-  }, [selectedCategory]);
 
   const [displayProducts, setDisplayProducts] = useState<any[]>([]);
   
@@ -75,27 +87,6 @@ export const ShopPage: React.FC = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 2000]);
   const [maxPrice, setMaxPrice] = useState(2000);
   const [priceAdjustedByUser, setPriceAdjustedByUser] = useState(false);
-
-  // Static products - Keep existing products working while database is being populated
-
-  // Helper function to normalize category names to slugs
-  const normalizeCategoryToSlug = (category: string): string => {
-    const categoryMap: Record<string, string> = {
-      'Bundle Deals': 'bundle-deals',
-      'Collection': 'bundle-deals',
-      'Collections': 'bundle-deals',
-      'Acrylic System': 'acrylic-system',
-      'Core Acrylics': 'core-acrylics',
-      'Coloured Acrylics': 'coloured-acrylics',
-      'Prep & Finish': 'prep-finishing',
-      'Prep & Finishing': 'prep-finishing',
-      'Gel System': 'gel-system',
-      'Tools & Essentials': 'tools-essentials',
-      'Furniture': 'furniture',
-      'Coming Soon': 'coming-soon'
-    };
-    return categoryMap[category] || category.toLowerCase().replace(/\s+/g, '-').replace(/&/g, '');
-  };
 
   // Fetch products
   useEffect(() => {
@@ -110,7 +101,7 @@ export const ShopPage: React.FC = () => {
             id: p.slug,
             name: p.title,
             slug: p.slug,
-            categories: [p.category].filter(Boolean),
+            categories: categorizeProduct(p.title, [p.category]),
             price: typeof p.price === 'number' ? p.price : Number(p.price ?? 0),
             compareAtPrice: typeof p.compareAt === 'number' ? p.compareAt : (p.compareAt ? Number(p.compareAt) : null),
             stock: p.stockStatus === 'In Stock' ? 999 : 0,
@@ -190,9 +181,7 @@ export const ShopPage: React.FC = () => {
             .map((pc: any) => pc?.category?.slug)
             .filter(Boolean);
 
-          const tagSlugs = (Array.isArray(p.tags) ? p.tags : [])
-            .map((t: any) => normalizeCategoryToSlug(String(t)))
-            .filter(Boolean);
+          const tags = (Array.isArray(p.tags) ? p.tags : []).map((t: any) => String(t));
 
           const categoryLower = (p.category || categoryById[p.category_id]?.slug || joinedCategorySlugs[0] || '').toString().toLowerCase();
           const explicitBundleDeal = categoryLower.includes('bundle'); 
@@ -220,88 +209,13 @@ export const ShopPage: React.FC = () => {
           }
           
           const rawCategory = p.category || categoryById[p.category_id]?.slug || joinedCategorySlugs[0] || 'all';
-          const baseCategory = normalizeCategoryToSlug(rawCategory);
-          let categories = Array.from(
-            new Set([
-              baseCategory,
-              ...joinedCategorySlugs.map((s: any) => normalizeCategoryToSlug(String(s))),
-              ...tagSlugs
-            ].filter(Boolean))
-          );
-          const productNameLower = (p.name || '').toLowerCase();
-          const has56g = /\b56\s?g\b/.test(productNameLower);
-
-          if (
-            (categories.includes('core-acrylics') || categories.includes('coloured-acrylics')) &&
-            !categories.includes('acrylic-system')
-          ) {
-            categories.push('acrylic-system');
-          }
-
-          const isSizedNailLiquid =
-            productNameLower.includes('nail liquid') &&
-            (productNameLower.includes('250ml') || productNameLower.includes('500ml'));
-
-          if (productNameLower.includes('brush') || productNameLower.includes('file') || productNameLower.includes('form')) {
-            if (!categories.includes('tools-essentials')) categories.push('tools-essentials');
-          }
-          if (productNameLower.includes('prep') || productNameLower.includes('primer') || productNameLower.includes('dehydrator')) {
-            if (!categories.includes('prep-finishing')) categories.push('prep-finishing');
-          }
-
-          if (isSizedNailLiquid) {
-            if (!categories.includes('prep-finishing')) categories.push('prep-finishing');
-            categories = categories.filter(
-              (c) => c !== 'acrylic-system' && c !== 'core-acrylics' && c !== 'coloured-acrylics'
-            );
-          }
-
-          if (!isSizedNailLiquid && (productNameLower.includes('acrylic') || productNameLower.includes('monomer') || productNameLower.includes('liquid'))) {
-            if (!categories.includes('acrylic-system')) categories.push('acrylic-system');
-            
-            // Subcategory Logic
-            const isExplicitColouredAcrylic =
-              productNameLower.includes('colour acrylic') ||
-              productNameLower.includes('color acrylic') ||
-              productNameLower.includes('colour acrylics') ||
-              productNameLower.includes('color acrylics');
-
-            const isCore = !isExplicitColouredAcrylic && (productNameLower.includes('clear') || 
-                          productNameLower.includes('core acrylic') ||
-                          productNameLower.includes('core acrylics') ||
-                          productNameLower.includes('pink') || 
-                          productNameLower.includes('white') || 
-                          productNameLower.includes('cover') || 
-                          productNameLower.includes('monomer') || 
-                          productNameLower.includes('liquid'));
-                          
-            const isColoured = isExplicitColouredAcrylic || productNameLower.includes('colour') || 
-                              productNameLower.includes('color') || 
-                              productNameLower.includes('collection') || 
-                              productNameLower.includes('glitter') ||
-                              productNameLower.includes('neon') ||
-                              productNameLower.includes('pastel');
-
-            if ((isCore || has56g) && !categories.includes('core-acrylics')) categories.push('core-acrylics');
-            if (isColoured && !categories.includes('coloured-acrylics')) categories.push('coloured-acrylics');
-            // Fallback: if in acrylic system but not identified as coloured, default to core if it looks like a basic powder? 
-            // For now, let's stick to explicit matches.
-          }
-
-          if (!isSizedNailLiquid && has56g && categories.includes('acrylic-system') && !categories.includes('core-acrylics')) {
-            categories.push('core-acrylics');
-          }
-          if (productNameLower.includes('gel') || productNameLower.includes('top coat') || productNameLower.includes('base coat')) {
-            // Exclude furniture/racks from Gel System
-            if (!productNameLower.includes('rack') && !productNameLower.includes('furniture') && !productNameLower.includes('garden')) {
-               if (!categories.includes('gel-system')) categories.push('gel-system');
-            }
-          }
+          const categories = categorizeProduct(p.name, [rawCategory, ...joinedCategorySlugs, ...tags]);
 
           return {
             id: p.id,
             name: p.name,
             slug: p.slug,
+            sku: p.sku,
             categories: categories,
             price: p.price || (p.price_cents ? p.price_cents / 100 : 0),
             compareAtPrice: p.compare_at_price || p.compare_at || null,
@@ -371,14 +285,10 @@ export const ShopPage: React.FC = () => {
       metaDescription.setAttribute('content', 'Shop professional nail care products, acrylic systems, and tools. High-quality products trusted by nail artists and beauty professionals.');
     }
 
+    // Older links use /shop#slug; move them onto ?category= so the URL stays the source of truth.
     const hashCategory = window.location.hash?.replace('#', '').trim();
     if (hashCategory) {
-      setSelectedCategory(hashCategory);
-      if (hashCategory === 'core-acrylics' || hashCategory === 'coloured-acrylics') {
-        setExpandedCategories((prev) =>
-          prev.includes('acrylic-system') ? prev : [...prev, 'acrylic-system']
-        );
-      }
+      navigate({ pathname: '/shop', search: `?category=${encodeURIComponent(hashCategory)}` }, { replace: true });
     }
 
     // Scroll Restoration Logic
@@ -393,62 +303,18 @@ export const ShopPage: React.FC = () => {
     }
   }, []);
 
-  // --- DYNAMIC CATEGORY GENERATION ---
-  const productCategories = useMemo(() => {
-    const cats = new Map();
-    cats.set('all', { name: 'All Products', slug: 'all', count: displayProducts.length });
-
-    const priorityOrder = [
-      'acrylic-system', 
-      'core-acrylics',
-      'coloured-acrylics',
-      'bundle-deals', 
-      'gel-system', 
-      'prep-finishing', 
-      'tools-essentials', 
-      'furniture'
-    ];
-    
-    const categoryNameOverrides: Record<string, string> = {
-      'prep-finishing': 'Prep & Finishing',
-      'tools-essentials': 'Tools & Essentials',
-      'core-acrylics': 'Core Acrylics',
-      'coloured-acrylics': 'Coloured Acrylics',
-      'bundle-deals': 'Bundle Deals'
-    };
-    
-    // Process priority order
-    priorityOrder.forEach(slug => {
-      const productsInCategory = displayProducts.filter((product: any) =>
-        (product.category === slug) || (product.categories && product.categories.includes(slug))
-      );
-      if (productsInCategory.length > 0) {
-        const name = categoryNameOverrides[slug] || slug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        cats.set(slug, { name, slug, count: productsInCategory.length });
-      }
-    });
-
-          // Process others (categories not in priorityOrder)
+  // Product count per category slug (the nav hides empty categories).
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
     displayProducts.forEach((product: any) => {
-      const productCategories = product.categories || (product.category ? [product.category] : []);
-      productCategories.forEach((slug: string) => {
-        if (!slug || slug === 'all' || slug === 'archived') return;
-
-        // Merge tools-accessories and accessories into tools-essentials for mobile consistency
-        let effectiveSlug = slug;
-        if (slug === 'tools-accessories' || slug === 'accessories') {
-          effectiveSlug = 'tools-essentials';
-        }
-
-        if (priorityOrder.includes(effectiveSlug)) return;
-
-        const name = categoryNameOverrides[effectiveSlug] || effectiveSlug.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        if (!cats.has(effectiveSlug)) cats.set(effectiveSlug, { name, slug: effectiveSlug, count: 0 });
-        cats.get(effectiveSlug).count++;
+      const productCategories: string[] = product.categories || (product.category ? [product.category] : []);
+      if (productCategories.includes('archived')) return;
+      counts.all = (counts.all || 0) + 1;
+      productCategories.forEach((slug) => {
+        counts[slug] = (counts[slug] || 0) + 1;
       });
     });
-
-    return Array.from(cats.values());
+    return counts;
   }, [displayProducts]);
 
   const sortOptions = [
@@ -462,17 +328,6 @@ export const ShopPage: React.FC = () => {
     { value: 'date-new', label: 'Date, new to old' }
   ];
 
-  const categoryLabels: Record<string, string> = {
-    all: 'Shop All',
-    'acrylic-system': 'Acrylic System',
-    'gel-system': 'Gel System',
-    'prep-finishing': 'Prep & Finishing',
-    'tools-essentials': 'Tools & Essentials',
-    'bundle-deals': 'Bundle Deals',
-    'nail-art': 'Nail Art',
-    furniture: 'Furniture'
-  };
-
   // Calculate Max Price dynamically based on filtered products (ignoring price filter)
   const dynamicMaxPrice = useMemo(() => {
     // We want the max price of products that match the current category/search, 
@@ -480,7 +335,7 @@ export const ShopPage: React.FC = () => {
     const relevantProducts = displayProducts.filter(product => {
       const productCategories = product.categories || (product.category ? [product.category] : []);
       const matchesCategory = selectedCategory === 'all' || productCategories.includes(selectedCategory);
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = productMatchesSearch(product, searchTerm);
       const matchesStock = !showInStockOnly || (product.inStock && product.price !== -1);
       const isNotArchived = !productCategories.includes('archived');
       
@@ -510,7 +365,7 @@ export const ShopPage: React.FC = () => {
     return displayProducts.filter((product: any) => {
       const productCategories = product.categories || (product.category ? [product.category] : []);
       const matchesCategory = selectedCategory === 'all' || productCategories.includes(selectedCategory);
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = productMatchesSearch(product, searchTerm);
       const matchesStock = !showInStockOnly || (product.inStock && product.price !== -1);
       const isNotArchived = !productCategories.includes('archived');
       const matchesPrice = product.price >= priceRange[0] && product.price <= priceRange[1];
@@ -544,7 +399,7 @@ export const ShopPage: React.FC = () => {
     setSearchTerm('');
     setSortBy('featured');
     setShowInStockOnly(false);
-    setSelectedCategory('all');
+    selectCategory('all');
     setPriceRange([0, maxPrice]);
     setShowFilters(false);
   };
@@ -557,8 +412,25 @@ export const ShopPage: React.FC = () => {
     return 'grid-cols-2'; // Mobile 2x2 (Default)
   };
 
-  const activeCategoryName = categoryLabels[selectedCategory] || selectedCategory.split('-').map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(' ');
+  const activeCategoryName = categoryLabel(selectedCategory);
+  // Parent categories shown above the heading, e.g. "Acrylics / Colour Acrylics"
+  const activeCategoryParents = categoryPath(selectedCategory).slice(0, -1);
   const activeResultsCount = sortedProducts.length;
+
+  const renderCategoryEyebrow = (className: string) => (
+    <p className={`text-xs uppercase text-pink-500 font-semibold ${className}`}>
+      {activeCategoryParents.length === 0
+        ? 'Blom Cosmetics'
+        : activeCategoryParents.map((parent, i) => (
+            <React.Fragment key={parent.slug}>
+              {i > 0 && <span className="mx-1.5 text-pink-300">/</span>}
+              <button type="button" onClick={() => selectCategory(parent.slug)} className="uppercase hover:text-pink-700 underline-offset-4 hover:underline">
+                {parent.name}
+              </button>
+            </React.Fragment>
+          ))}
+    </p>
+  );
 
   if (loading) {
     return (
@@ -589,7 +461,7 @@ export const ShopPage: React.FC = () => {
           <Container>
             <div className="flex flex-col items-center text-center gap-5 relative z-10">
               <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-pink-400 font-semibold mb-2">Blom Cosmetics</p>
+                {renderCategoryEyebrow('tracking-[0.3em] mb-2')}
                 <h1 className="text-5xl font-extrabold text-gray-900 tracking-tight">{activeCategoryName}</h1>
                 <p className="text-sm text-gray-400 mt-2 font-medium">{activeResultsCount} {activeResultsCount === 1 ? 'product' : 'products'}</p>
               </div>
@@ -597,15 +469,17 @@ export const ShopPage: React.FC = () => {
               <div className="relative w-full max-w-md">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
                 <input
-                  type="text"
+                  type="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search products…"
+                  placeholder="Search by name or shade code, e.g. E005"
+                  aria-label="Search products"
                   className="w-full pl-11 pr-10 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 transition-all"
                 />
                 {searchTerm && (
                   <button
                     onClick={() => setSearchTerm('')}
+                    aria-label="Clear search"
                     className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-100 transition-colors"
                   >
                     <X className="w-3.5 h-3.5 text-gray-400" />
@@ -620,7 +494,7 @@ export const ShopPage: React.FC = () => {
 
         <Container>
           <div className="lg:hidden pt-4 pb-2">
-            <p className="text-xs uppercase tracking-[0.25em] text-pink-400 font-semibold">Blom Cosmetics</p>
+            {renderCategoryEyebrow('tracking-[0.25em]')}
             <h1 className="text-2xl font-bold text-gray-900 mt-1">{activeCategoryName}</h1>
             <p className="text-sm text-gray-400 mt-0.5">{activeResultsCount} {activeResultsCount === 1 ? 'product' : 'products'}</p>
           </div>
@@ -629,16 +503,19 @@ export const ShopPage: React.FC = () => {
           <div className="lg:hidden mt-3 mb-2 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
-              type="text"
+              type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search products…"
-              className="w-full pl-10 pr-9 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 transition-all"
+              placeholder="Search name or code, e.g. E005"
+              aria-label="Search products"
+              enterKeyHint="search"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-base text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 transition-all"
             />
             {searchTerm && (
               <button
                 onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
+                aria-label="Clear search"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2"
               >
                 <X className="w-3.5 h-3.5 text-gray-400" />
               </button>
@@ -651,25 +528,10 @@ export const ShopPage: React.FC = () => {
             </div>
           )}
 
-          {/* Category Pills - Mobile Optimized */}
-          <div className="lg:hidden mb-4">
-            <div className="flex flex-wrap gap-1.5">
-              {productCategories.map((category) => (
-                <button
-                  key={category.slug}
-                  onClick={() => setSelectedCategory(category.slug)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 ${
-                    selectedCategory === category.slug
-                      ? 'bg-pink-400 text-white shadow-md'
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                  }`}
-                >
-                  {category.name}
-                  <span className="ml-1 text-xs opacity-75">({category.count})</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* Mobile categories: main row, then sub-category rows only for the chosen branch */}
+          <nav aria-label="Shop categories" className="lg:hidden mt-3 mb-4">
+            <CategoryChipRows selected={selectedCategory} counts={categoryCounts} onSelect={selectCategory} />
+          </nav>
 
           {/* Mobile Toolbar (Sticky) */}
           <div className="sticky top-0 z-30 bg-white border-b border-gray-200 lg:hidden -mx-4 px-4 mb-6">
@@ -725,122 +587,11 @@ export const ShopPage: React.FC = () => {
             {/* Desktop Sidebar (Categories & Filters) */}
             <div className="w-64 flex-shrink-0 hidden lg:block">
               <div className="sticky top-24 space-y-8">
-                {/* Sidebar Search */}
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input
-                    type="text"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search products…"
-                    className="w-full pl-9 pr-8 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 transition-all"
-                  />
-                  {searchTerm && (
-                    <button onClick={() => setSearchTerm('')} className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <X className="w-3.5 h-3.5 text-gray-400 hover:text-gray-600" />
-                    </button>
-                  )}
-                </div>
-
                 {/* Categories */}
-                <div>
+                <nav aria-label="Shop categories">
                   <h3 className="font-bold text-sm uppercase tracking-widest text-gray-500 mb-4">Categories</h3>
-                  <div className="space-y-2">
-                    {productCategories.map(cat => {
-                      // Skip if subcategory (will be rendered by parent)
-                      if (cat.slug === 'core-acrylics' || cat.slug === 'coloured-acrylics') return null;
-
-                      // Special handling for Acrylic System (Parent)
-                      if (cat.slug === 'acrylic-system') {
-                        const isExpanded = expandedCategories.includes('acrylic-system');
-                        const core = productCategories.find(c => c.slug === 'core-acrylics');
-                        const coloured = productCategories.find(c => c.slug === 'coloured-acrylics');
-                        const hasChildren = (core && core.count > 0) || (coloured && coloured.count > 0);
-
-                        return (
-                          <div key={cat.slug} className="flex flex-col mb-1">
-                            <div 
-                              className={`cursor-pointer text-sm flex justify-between items-center group py-1.5 ${
-                                selectedCategory === cat.slug 
-                                  ? 'font-bold text-pink-600' 
-                                  : 'text-gray-600 hover:text-gray-900'
-                              }`}
-                              onClick={() => {
-                                setSelectedCategory(cat.slug);
-                                setExpandedCategories(prev => 
-                                  prev.includes('acrylic-system') 
-                                    ? prev.filter(c => c !== 'acrylic-system') 
-                                    : [...prev, 'acrylic-system']
-                                );
-                              }}
-                            >
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{cat.name}</span>
-                                {hasChildren && (
-                                  <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                                )}
-                              </div>
-                              <span className={`text-xs ${selectedCategory === cat.slug ? 'text-pink-400' : 'text-gray-400 group-hover:text-gray-500'}`}>
-                                ({cat.count})
-                              </span>
-                            </div>
-
-                            {/* Subcategories Dropdown */}
-                            {isExpanded && hasChildren && (
-                              <div className="flex flex-col gap-1 mt-1 ml-3 pl-3 border-l-2 border-gray-100 animate-in slide-in-from-top-1 duration-200">
-                                {core && core.count > 0 && (
-                                  <div 
-                                    className={`cursor-pointer text-sm flex justify-between items-center py-1 hover:text-pink-500 ${
-                                      selectedCategory === core.slug ? 'font-bold text-pink-600' : 'text-gray-500'
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedCategory(core.slug);
-                                    }}
-                                  >
-                                    <span>{core.name}</span>
-                                    <span className="text-xs text-gray-400">({core.count})</span>
-                                  </div>
-                                )}
-                                {coloured && coloured.count > 0 && (
-                                  <div 
-                                    className={`cursor-pointer text-sm flex justify-between items-center py-1 hover:text-pink-500 ${
-                                      selectedCategory === coloured.slug ? 'font-bold text-pink-600' : 'text-gray-500'
-                                    }`}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedCategory(coloured.slug);
-                                    }}
-                                  >
-                                    <span>{coloured.name}</span>
-                                    <span className="text-xs text-gray-400">({coloured.count})</span>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
-                      
-                      return (
-                        <div 
-                          key={cat.slug}
-                          className={`cursor-pointer text-sm flex justify-between items-center group py-1.5 ${
-                            selectedCategory === cat.slug 
-                              ? 'font-bold text-pink-600' 
-                              : 'text-gray-600 hover:text-gray-900'
-                          }`}
-                          onClick={() => setSelectedCategory(cat.slug)}
-                        >
-                          <span className="font-medium">{cat.name}</span>
-                          <span className={`text-xs ${selectedCategory === cat.slug ? 'text-pink-400' : 'text-gray-400 group-hover:text-gray-500'}`}>
-                            ({cat.count})
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                  <CategorySidebarTree selected={selectedCategory} counts={categoryCounts} onSelect={selectCategory} />
+                </nav>
 
                 {/* Desktop Price Filter */}
                 <div>
@@ -881,7 +632,7 @@ export const ShopPage: React.FC = () => {
                 <div className="flex flex-wrap gap-2 mb-5">
                   {selectedCategory !== 'all' && (
                     <button
-                      onClick={() => setSelectedCategory('all')}
+                      onClick={() => selectCategory('all')}
                       className="inline-flex items-center gap-1.5 px-3 py-1 bg-gray-900 text-white text-xs font-medium rounded-full hover:bg-gray-700 transition-colors"
                     >
                       {activeCategoryName}
