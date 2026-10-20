@@ -8,6 +8,7 @@ import { ScrollableTabRow } from '../components/ui/ScrollableTabRow';
 import { CourseReviews, type StaticCourseReview } from '../components/course/CourseReviews';
 import { supabase } from '../lib/supabase';
 import { getAffiliateRef } from '../lib/affiliate';
+import { joinInternationalPhone } from '../lib/validation';
 import { 
   Clock, 
   MapPin, 
@@ -1376,7 +1377,7 @@ export const CourseDetailPage: React.FC = () => {
           buyer: {
             name: formData.name,
             email: formData.email,
-            phone: `${formData.countryCode}${formData.phone}`
+            phone: joinInternationalPhone(formData.countryCode, formData.phone)
           },
           course_booking: {
             course_slug: academyCourseSlug,
@@ -1443,7 +1444,7 @@ export const CourseDetailPage: React.FC = () => {
               givenNames: firstName,
               surname: lastName,
               email: formData.email,
-              phoneNumber: `${formData.countryCode}${formData.phone}`
+              phoneNumber: joinInternationalPhone(formData.countryCode, formData.phone)
             },
             items: [{
               name: itemName,

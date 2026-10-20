@@ -1,5 +1,16 @@
 // Mobile number validation and formatting for South Africa
 
+// Joins a dial code ("+27") and a locally typed number ("064 556 9024") into E.164.
+// Drops spaces/dashes and the local trunk "0" so "+27" + "0645569024" becomes
+// "+27645569024", not "+270645569024". A number typed with its own "+" is kept as-is.
+export const joinInternationalPhone = (countryCode: string, phone: string): string => {
+  const typed = phone.trim();
+  const digits = typed.replace(/\D/g, '');
+  if (typed.startsWith('+')) return `+${digits}`;
+  const dial = countryCode.replace(/\D/g, '');
+  return `+${dial}${digits.replace(/^0+/, '')}`;
+};
+
 export const formatMobileNumber = (mobile: string): string => {
   // Remove all non-digit characters
   const cleaned = mobile.replace(/\D/g, '');
