@@ -89,13 +89,14 @@ async function bookUberDelivery(quoteId: string, order: any) {
 async function runFulfilment(order: any) {
   const orderId = order.id;
 
-  // A) Mark paid
-  await supabase.from('orders').update({
+  // A) Mark paid — stop before fulfilment if the DB didn't take it
+  const { error: markPaidError } = await supabase.from('orders').update({
     status: 'paid',
     payment_status: 'paid',
     paid_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }).eq('id', orderId);
+  if (markPaidError) throw new Error(`Failed to mark order paid: ${markPaidError.message}`);
   console.log('✅ Order marked paid:', orderId);
 
   // B) Coupon
@@ -227,6 +228,7 @@ export const handler: Handler = async (event) => {
     // 1. Verify with Payflex API
     let orderStatus: string | null = null;
     let verifiedAmount: number | undefined;
+    let verifiedMerchantReference: string | undefined;
     if (PAYFLEX_CLIENT_ID && PAYFLEX_CLIENT_SECRET) {
       try {
         const token = await getPayflexToken();
@@ -237,6 +239,7 @@ export const handler: Handler = async (event) => {
           const pfData = await pfRes.json();
           orderStatus = pfData.orderStatus || null;
           verifiedAmount = pfData.amount ?? pfData.totalAmount ?? pfData.orderAmount;
+          verifiedMerchantReference = pfData.merchantReference;
           console.log('✅ Payflex API status:', orderStatus);
         } else {
           console.error('❌ Payflex API error:', pfRes.status, await pfRes.text());
@@ -264,6 +267,18 @@ export const handler: Handler = async (event) => {
     if (orderError || !order) {
       console.error('Order not found:', order_id, orderError);
       return { statusCode: 404, headers, body: JSON.stringify({ error: 'Order not found' }) };
+    }
+
+    // Both ids come from the browser, so the approved Payflex order must be proven to
+    // belong to this order — otherwise one real Payflex payment could mark any other
+    // order of the same amount as paid.
+    const belongsToOrder =
+      (!!verifiedMerchantReference &&
+        [order.m_payment_id, order.merchant_payment_id].includes(verifiedMerchantReference)) ||
+      (!!order.payflex_order_id && order.payflex_order_id === payflex_order_id);
+    if (!belongsToOrder) {
+      console.error('Payflex order does not belong to this order', { order_id, payflex_order_id, verifiedMerchantReference });
+      return { statusCode: 409, headers, body: JSON.stringify({ error: 'Payment does not match this order' }) };
     }
 
     if (verifiedAmount !== undefined) {

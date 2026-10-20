@@ -1,6 +1,5 @@
 import type { Handler } from '@netlify/functions'
 import { WOMENS_DAY_PROMOTION_CODE } from '../../src/lib/womensDayPromotion'
-import crypto from 'crypto'
 import { enrollCourse } from './_lib/enroll-helper'
 import { notifyInstructor } from './_lib/instructor-notify'
 
@@ -107,28 +106,12 @@ async function bookUberDelivery(quoteId: string, order: any) {
 const PF_ENV = String(process.env.PAYFAST_ENV || 'live').toLowerCase()
 const SUPABASE_URL = process.env.SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
-const PF_PASSPHRASE =
-  (PF_ENV === 'sandbox' ? process.env.PAYFAST_SANDBOX_PASSPHRASE : process.env.PAYFAST_PASSPHRASE) ||
-  process.env.PF_PASSPHRASE ||
-  ''
+const PF_MERCHANT_ID = String(
+  (PF_ENV === 'sandbox' ? process.env.PAYFAST_SANDBOX_MERCHANT_ID : process.env.PAYFAST_MERCHANT_ID) || ''
+).trim()
 const SITE = process.env.SITE_URL || process.env.SITE_BASE_URL || 'https://blom-cosmetics.co.za'
 const PF_BASE = PF_ENV === 'sandbox' ? 'https://sandbox.payfast.co.za' : 'https://www.payfast.co.za'
 const N8N_WEBHOOK_URL = 'https://dockerfile-1n82.onrender.com/webhook/notify-order'
-
-function encPF(v: unknown) {
-  return encodeURIComponent(String(v ?? '').trim())
-    .replace(/[!'()*]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())
-    .replace(/%20/g, '+')
-    .replace(/%[0-9a-f]{2}/g, m => m.toUpperCase())
-}
-
-function signITN(fields: Record<string, any>, passphrase?: string): string {
-  const keys = Object.keys(fields).filter((k) => fields[k] !== undefined && fields[k] !== null && fields[k] !== '')
-  keys.sort()
-  const base = keys.map((k) => `${k}=${encPF(fields[k])}`).join('&')
-  const withPP = passphrase ? `${base}&passphrase=${encPF(passphrase)}` : base
-  return crypto.createHash('md5').update(withPP).digest('hex')
-}
 
 async function validateWithPayFast(rawBody: string) {
   const controller = new AbortController()
@@ -168,37 +151,43 @@ export const handler: Handler = async (event) => {
       return { statusCode: 500, body: JSON.stringify({ error: 'Server config missing' }) }
     }
 
-    const passphrase = PF_PASSPHRASE.trim()
-    const receivedSignature = String(data.signature || '').trim().toLowerCase()
-    const { signature: _sig, ...fieldsToVerify } = data
-    const expectedWithPassphrase = passphrase ? signITN(fieldsToVerify, passphrase).toLowerCase() : ''
-    const expectedWithoutPassphrase = signITN(fieldsToVerify).toLowerCase()
+    // Every ITN must be confirmed by PayFast's own server before we act on it.
+    // A local signature check used to let an ITN skip this step, but it sorted the
+    // fields alphabetically while PayFast signs them in the order sent, so real ITNs
+    // were already falling through to this server check. What the shortcut did let through: it also
+    // accepted a signature made WITHOUT the passphrase, which anyone can compute, and
+    // the passphrase itself has been published in this public repo's history.
+    const rawBody = event.body || ''
+    const pfValidate = rawBody ? await validateWithPayFast(rawBody) : { ok: false, status: null, text: 'EMPTY_BODY' }
+    if (!pfValidate.ok) {
+      console.error('PayFast did not confirm this ITN', {
+        m_payment_id: data.m_payment_id,
+        pf_payment_id: data.pf_payment_id,
+        payfastValidateStatus: pfValidate.status,
+        payfastValidateText: pfValidate.text
+      })
+      // A network failure is worth a retry; an INVALID answer is not.
+      return pfValidate.status === null
+        ? { statusCode: 503, body: 'PAYFAST_UNREACHABLE' }
+        : { statusCode: 400, body: 'ITN_NOT_CONFIRMED' }
+    }
 
-    const signatureOk =
-      !!receivedSignature &&
-      (receivedSignature === expectedWithoutPassphrase || (expectedWithPassphrase && receivedSignature === expectedWithPassphrase))
-
-    if (!signatureOk) {
-      const rawBody = event.body || ''
-      const pfValidate = rawBody ? await validateWithPayFast(rawBody) : { ok: false, status: null, text: 'EMPTY_BODY' }
-
-      if (!pfValidate.ok) {
-        console.error('Invalid PayFast ITN signature', {
-          receivedSignature,
-          expectedWithPassphrase,
-          expectedWithoutPassphrase,
-          payfastValidateStatus: pfValidate.status,
-          payfastValidateText: pfValidate.text
-        })
-        return { statusCode: 400, body: 'INVALID_SIGNATURE' }
-      }
+    // A genuine ITN can still be for someone else's PayFast account using our order reference.
+    if (!PF_MERCHANT_ID) {
+      console.error('CRITICAL: PAYFAST_MERCHANT_ID is not set')
+      return { statusCode: 500, body: 'Server config missing' }
+    }
+    if (String(data.merchant_id || '').trim() !== PF_MERCHANT_ID) {
+      console.error('PayFast ITN for a different merchant', { m_payment_id: data.m_payment_id, merchant_id: data.merchant_id })
+      return { statusCode: 400, body: 'MERCHANT_MISMATCH' }
     }
 
     // 2. Handle Failed Payments
     if (data.payment_status !== 'COMPLETE') {
       if (data.m_payment_id) {
          const orParam = encodeURIComponent(`(m_payment_id.eq.${data.m_payment_id},merchant_payment_id.eq.${data.m_payment_id},id.eq.${data.m_payment_id})`)
-         await fetch(`${SUPABASE_URL}/rest/v1/orders?or=${orParam}`, {
+         // Never downgrade an order that is already paid (e.g. a failed earlier attempt).
+         await fetch(`${SUPABASE_URL}/rest/v1/orders?or=${orParam}&payment_status=neq.paid`, {
           method: 'PATCH',
           headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ status: 'cancelled', payment_status: 'failed' })
@@ -255,12 +244,13 @@ export const handler: Handler = async (event) => {
     // but the instructor notification must fire only on the actual transition to paid —
     // in-person bookings never reach invitation_status 'sent', so nothing else would
     // stop a retry from emailing the instructor a second time.
-    const wasAlreadyPaid = order.status === 'paid'
-    if (order.status !== 'paid') {
+    // Paid orders move on to packed/shipped, so status alone can't tell us.
+    const wasAlreadyPaid = order.status === 'paid' || order.payment_status === 'paid'
+    if (!wasAlreadyPaid) {
       console.log(`Processing Payment for ${order.id}...`)
 
       // A) Mark as Paid in DB
-      await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+      const markPaidRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
         method: 'PATCH',
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -274,6 +264,11 @@ export const handler: Handler = async (event) => {
           payfast_payment_id: data.pf_payment_id || null
         })
       })
+      if (!markPaidRes.ok) {
+        // Non-200 so PayFast retries instead of fulfilling an order the DB doesn't show as paid.
+        console.error('Failed to mark order paid:', order.id, markPaidRes.status, await markPaidRes.text())
+        return { statusCode: 500, body: 'DB_UPDATE_FAILED' }
+      }
 
       // B) INCREMENT COUPON USAGE (New Feature)
       if (order.coupon_code && order.coupon_code !== WOMENS_DAY_PROMOTION_CODE) {

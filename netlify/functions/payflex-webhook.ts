@@ -125,19 +125,26 @@ export const handler: Handler = async (event) => {
 
     if (!SUPABASE_URL || !SERVICE_KEY) return { statusCode: 500, body: 'Server config missing' };
 
-    // Verify by calling Payflex API directly (no webhook signature)
-    let orderStatus = data.orderStatus;
-    let verifiedOrder: VerifiedPayflexOrder | null = null;
-    if (payflexOrderId && PAYFLEX_CLIENT_ID) {
-      const verified = await verifyPayflexOrder(payflexOrderId);
-      if (verified) {
-        verifiedOrder = verified;
-        orderStatus = verified.orderStatus;
-        console.log('✅ Verified status from Payflex API:', orderStatus);
-      } else {
-        console.warn('⚠️ Could not verify with Payflex API, using webhook payload status');
-      }
+    // Payflex webhooks carry no signature, so anyone can POST one. The payload is never
+    // trusted: the status always comes from the Payflex API. Falling back to the payload
+    // used to let a forged { orderStatus: 'Approved' } mark any order paid.
+    if (!PAYFLEX_CLIENT_ID || !PAYFLEX_CLIENT_SECRET) {
+      // Non-2xx so Payflex keeps retrying until the config is fixed.
+      console.error('CRITICAL: Payflex API credentials not set — cannot verify webhook');
+      return { statusCode: 503, body: 'Server config missing' };
     }
+    if (!payflexOrderId) {
+      console.error('Payflex webhook has no orderId — cannot verify, ignoring');
+      return { statusCode: 200, body: 'Unverifiable — acknowledged' };
+    }
+    const verifiedOrder = await verifyPayflexOrder(payflexOrderId);
+    if (!verifiedOrder) {
+      // Non-2xx so Payflex retries; payflex-reconcile-cron also picks it up.
+      console.error('Could not verify with Payflex API — not processing', payflexOrderId);
+      return { statusCode: 503, body: 'Payflex verification unavailable' };
+    }
+    const orderStatus = verifiedOrder.orderStatus;
+    console.log('✅ Verified status from Payflex API:', orderStatus);
 
     // Find the order by merchantReference (= m_payment_id we set when creating the order),
     // falling back to payflex_order_id (= the orderId Payflex sends us in every callback).
@@ -183,8 +190,23 @@ export const handler: Handler = async (event) => {
       return { statusCode: 404, body: 'Order not found' };
     }
 
+    // The verified Payflex order must belong to THIS order. Otherwise one real approved
+    // Payflex payment could be replayed against any other order by changing merchantReference.
+    const belongsToOrder =
+      (!!verifiedOrder.merchantReference &&
+        [order.m_payment_id, order.merchant_payment_id].includes(verifiedOrder.merchantReference)) ||
+      (!!order.payflex_order_id && order.payflex_order_id === payflexOrderId);
+    if (!belongsToOrder) {
+      console.error('Payflex order does not belong to this order', {
+        orderId: order.id,
+        payflexOrderId,
+        verifiedMerchantReference: verifiedOrder.merchantReference
+      });
+      return { statusCode: 200, body: 'Payflex order does not match — acknowledged' };
+    }
+
     // Handle non-approved statuses — only act on definite decline/abandon, never on undefined
-    const verifiedAmount = verifiedOrder?.amount ?? verifiedOrder?.totalAmount ?? verifiedOrder?.orderAmount;
+    const verifiedAmount = verifiedOrder.amount ?? verifiedOrder.totalAmount ?? verifiedOrder.orderAmount;
     if (verifiedAmount !== undefined) {
       const paidAmountCents = Math.round(Number(verifiedAmount) * 100);
       const expectedAmountCents = Number(order.total_cents ?? Math.round(Number(order.total || 0) * 100));
@@ -194,10 +216,19 @@ export const handler: Handler = async (event) => {
       }
     }
 
+    // Paid orders move on to packed/shipped, so status alone can't tell us.
+    const alreadyPaid = order.status === 'paid' || order.payment_status === 'paid';
+
     const definitelyDeclined = orderStatus && orderStatus !== 'Approved' && orderStatus !== 'Created' && orderStatus !== 'Initiated';
     if (definitelyDeclined) {
+      // A declined/abandoned earlier attempt must not cancel an order that a later attempt paid.
+      const obsoleteAttempt = !!order.payflex_order_id && order.payflex_order_id !== payflexOrderId;
+      if (alreadyPaid || obsoleteAttempt) {
+        console.log(`Payflex status ${orderStatus} for ${alreadyPaid ? 'a paid order' : 'an older attempt'} — ignoring`);
+        return { statusCode: 200, body: 'Stale decline — acknowledged' };
+      }
       console.log(`Payflex status ${orderStatus} — marking order as cancelled`);
-      await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+      await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}&payment_status=neq.paid`, {
         method: 'PATCH',
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'cancelled', payment_status: 'failed', updated_at: new Date().toISOString() })
@@ -210,7 +241,7 @@ export const handler: Handler = async (event) => {
     }
 
     // Already paid — idempotent
-    if (order.status === 'paid') {
+    if (alreadyPaid) {
       console.log('Order already paid, skipping:', order.id);
       return { statusCode: 200, body: 'Already paid' };
     }
@@ -223,11 +254,16 @@ export const handler: Handler = async (event) => {
     }
 
     // A) Mark as paid
-    await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
+    const markPaidRes = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${order.id}`, {
       method: 'PATCH',
       headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'paid', payment_status: 'paid', paid_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     });
+    if (!markPaidRes.ok) {
+      // Non-2xx so Payflex retries instead of fulfilling an order the DB doesn't show as paid.
+      console.error('Failed to mark order paid:', order.id, markPaidRes.status, await markPaidRes.text());
+      return { statusCode: 500, body: 'DB update failed' };
+    }
 
     // B) Increment coupon usage
     if (order.coupon_code && order.coupon_code !== WOMENS_DAY_PROMOTION_CODE) {
