@@ -116,10 +116,6 @@ export const ContactPage: React.FC = () => {
     {
       question: 'Can I get personalized product recommendations?',
       answer: 'Absolutely! Our expert team can provide personalized product recommendations based on your skill level, preferences, and goals. Contact us via email or phone for a consultation.'
-    },
-    {
-      question: 'Do you offer bulk discounts for salons?',
-      answer: 'Yes, we offer wholesale pricing for salons, schools, and bulk orders. Contact our business team at shopblomcosmetics@gmail.com for pricing information and to set up a wholesale account.'
     }
   ];
 
