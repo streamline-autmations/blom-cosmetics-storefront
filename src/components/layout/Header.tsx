@@ -8,7 +8,6 @@ import { WishlistButton } from '../wishlist/WishlistButton';
 import { AnnouncementSignup } from './AnnouncementSignup';
 import { AnnouncementBar } from './AnnouncementBar';
 import { BackInStockPopup } from './BackInStockPopup';
-import { BirthdayBundlePopup } from './BirthdayBundlePopup';
 import { WomensDayPopup } from './WomensDayPopup';
 import { CatEyeSpecialsPopup } from './CatEyeSpecialsPopup';
 import { StarterPackPopup } from './StarterPackPopup';
@@ -120,7 +119,6 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
       <StarterPackPopup />
       <CatEyeSpecialsPopup />
       <WomensDayPopup />
-      <BirthdayBundlePopup />
       <BackInStockPopup />
 
       {/* Main Header */}
