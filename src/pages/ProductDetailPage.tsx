@@ -27,6 +27,8 @@ import { isBundleInStock } from '../lib/stockAvailability';
 import { categorizeProduct, primaryCategoryPath } from '../lib/shopCategories';
 import { PaymentMethods } from '../components/payment/PaymentMethods';
 import { ShadeRequestForm } from '../components/product/ShadeRequestForm';
+import { ApplicationGuideCard, GuideProductsRow } from '../components/product/ApplicationGuide';
+import { guidesForProduct } from '../lib/applicationGuides';
 import { emptyShadeRequest, sanitizeShadeRequest, validateShadeRequest, ShadeRequest, ShadeRequestErrors } from '../lib/shadeRequest';
 
 const numericStock = (value: unknown): number | null => {
@@ -491,6 +493,8 @@ export const ProductDetailPage: React.FC = () => {
     const tags = Array.isArray((product as any).tags) ? (product as any).tags.map((t: any) => String(t)) : [];
     return primaryCategoryPath(categorizeProduct(product.name || '', [categoryStr, ...tags]));
   }, [product]);
+
+  const applicationGuides = useMemo(() => (product ? guidesForProduct(product) : []), [product?.slug, product?.name, product?.category]);
 
   const shopLinkTarget = useMemo(() => {
     try {
@@ -1007,6 +1011,8 @@ export const ProductDetailPage: React.FC = () => {
                 </div>
               </div>
 
+              <ApplicationGuideCard guides={applicationGuides} />
+
               {/* Accordion Sections - Smart Content Hiding */}
               <div className="border-t border-gray-100">
                 {/* Overview */}
@@ -1141,6 +1147,11 @@ export const ProductDetailPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Products used in this product's application guide (single-system products only) */}
+          {applicationGuides.length === 1 && (
+            <GuideProductsRow guide={applicationGuides[0]} currentSlug={product.slug} />
+          )}
 
           {/* Reviews Section */}
           <div className="mb-20 scroll-mt-24" id="reviews">
