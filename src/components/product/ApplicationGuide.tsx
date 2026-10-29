@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BookOpen, Download, MessageCircle, Plus, ShoppingCart } from 'lucide-react';
+import { BookOpen, Download, MessageCircle, Play, Plus, ShoppingCart, X } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCart } from '../../lib/cart';
 import { isProductInStock } from '../../lib/stockAvailability';
@@ -28,11 +28,88 @@ const whatsappShareUrl = (guide: ApplicationGuide) => {
 const buttonBase =
   'inline-flex items-center justify-center gap-2 rounded-full text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 focus-visible:ring-offset-2';
 
+/** The how-to video in a small portrait window. The player only loads once it is opened. */
+const GuideVideoModal: React.FC<{ video: NonNullable<ApplicationGuide['video']>; onClose: () => void }> = ({ video, onClose }) => {
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={video.title}
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/60 p-4 animate-fade-in"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-[min(360px,100%)] overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <p className="text-sm font-semibold text-gray-900">{video.title}</p>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            aria-label="Close video"
+            className="inline-flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+        <div className="aspect-[9/16] max-h-[78vh] w-full bg-blue-50">
+          <iframe
+            src={video.embedUrl}
+            title={video.title}
+            allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            className="h-full w-full border-0"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const GuideActions: React.FC<{ guide: ApplicationGuide; size?: 'md' | 'sm' }> = ({ guide, size = 'md' }) => {
   const height = size === 'md' ? 'h-10 px-2 sm:px-4' : 'h-9 px-2 sm:px-3.5';
+  const [videoOpen, setVideoOpen] = useState(false);
+  const videoButtonRef = useRef<HTMLButtonElement>(null);
+  const closeVideo = React.useCallback(() => {
+    setVideoOpen(false);
+    videoButtonRef.current?.focus();
+  }, []);
   // Phones: View + Download share the width and Share stays an icon, so all three fit on one line.
+  // The video button, when the guide has one, takes its own full-width row above them.
   return (
     <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-2 sm:flex sm:flex-wrap">
+      {guide.video && (
+        <>
+          <button
+            ref={videoButtonRef}
+            type="button"
+            onClick={() => setVideoOpen(true)}
+            className={`${buttonBase} ${height} col-span-3 border border-pink-300 bg-white text-pink-700 hover:bg-pink-50`}
+          >
+            <Play className="h-4 w-4" aria-hidden="true" />
+            Watch the video
+          </button>
+          {videoOpen && <GuideVideoModal video={guide.video} onClose={closeVideo} />}
+        </>
+      )}
       <a
         href={guide.pdf}
         target="_blank"
@@ -58,7 +135,8 @@ const GuideActions: React.FC<{ guide: ApplicationGuide; size?: 'md' | 'sm' }> = 
         className={`${buttonBase} ${height} min-w-[2.5rem] border border-gray-300 bg-white text-gray-700 hover:border-green-600 hover:text-green-700`}
       >
         <MessageCircle className="h-4 w-4" aria-hidden="true" />
-        <span className="hidden sm:inline">Share</span>
+        {/* With the video button there are four actions, so Share stays an icon to keep one row. */}
+        <span className={guide.video ? 'sr-only' : 'hidden sm:inline'}>Share</span>
       </a>
     </div>
   );

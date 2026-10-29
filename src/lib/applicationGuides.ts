@@ -21,6 +21,8 @@ export interface ApplicationGuide {
   pages: number;
   pdf: string;
   thumbnail: string;
+  /** Optional how-to video, shown in a small window from the guide card. */
+  video?: { embedUrl: string; title: string };
   products: GuideProduct[];
 }
 
@@ -73,6 +75,11 @@ export const APPLICATION_GUIDES: Record<GuideId, ApplicationGuide> = {
     pages: 6,
     pdf: '/guides/blom-rubber-base-application-guide.pdf',
     thumbnail: '/guides/blom-rubber-base-application-guide.webp',
+    // Bunny Stream library 601665. Portrait video, so the player window is portrait too.
+    video: {
+      embedUrl: 'https://iframe.mediadelivery.net/embed/601665/99223e8b-a6a4-47c2-82bd-c40abbde8bb2?autoplay=true&preload=true',
+      title: 'How to apply BLOM Rubber Base',
+    },
     products: [
       { slug: CLEANSER, step: 'Step 04 · Cleanse' },
       { slug: PREP, step: 'Step 05 · Prep' },
