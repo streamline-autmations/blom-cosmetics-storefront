@@ -2,6 +2,7 @@ import type { Handler } from '@netlify/functions'
 import { WOMENS_DAY_PROMOTION_CODE } from '../../src/lib/womensDayPromotion'
 import { enrollCourse } from './_lib/enroll-helper'
 import { notifyInstructor } from './_lib/instructor-notify'
+import { notifyGelSystemTutorial } from './_lib/tutorial-notify'
 
 async function bookUberDelivery(quoteId: string, order: any) {
   const clientId = process.env.UBER_DIRECT_CLIENT_ID
@@ -352,6 +353,9 @@ export const handler: Handler = async (event) => {
         });
         console.log('✅ Notification sent')
       } catch (e) { console.error('Notification error:', e) }
+
+      // E2) Rubber Base / gel system tutorial email (n8n sends it once per customer)
+      await notifyGelSystemTutorial({ orderId: order.id, email: order.buyer_email || data.email_address })
 
       // F) Book Uber Direct delivery if a quote ID was stored on the order
       const uberQuoteId = order.delivery_address?.uber_quote_id

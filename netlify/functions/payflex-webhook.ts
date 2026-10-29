@@ -1,5 +1,6 @@
 import type { Handler } from '@netlify/functions';
 import { enrollCourse } from './_lib/enroll-helper';
+import { notifyGelSystemTutorial } from './_lib/tutorial-notify';
 import { WOMENS_DAY_PROMOTION_CODE } from '../../src/lib/womensDayPromotion';
 
 const PAYFLEX_AUTH_URL = process.env.PAYFLEX_AUTH_URL || 'https://auth-uat.payflex.co.za/auth/merchant';
@@ -334,6 +335,9 @@ export const handler: Handler = async (event) => {
       });
       console.log('✅ N8N notified');
     } catch (e) { console.error('N8N notification error:', e); }
+
+    // E2) Rubber Base / gel system tutorial email (n8n sends it once per customer)
+    await notifyGelSystemTutorial({ orderId: order.id, email: order.buyer_email });
 
     // F) Book Uber delivery if applicable
     const uberQuoteId = order.delivery_address?.uber_quote_id;

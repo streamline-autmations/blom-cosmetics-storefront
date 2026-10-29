@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { enrollCourse } from './enroll-helper';
+import { notifyGelSystemTutorial } from './tutorial-notify';
 
 // Shared reconcile engine. Used by:
 //   payflex-reconcile.ts      — manual/on-demand run, secret-gated
@@ -139,6 +140,9 @@ async function runFulfilment(order: any, notify: boolean) {
         })
       });
     } catch (e) { console.error('[reconcile] n8n error:', e); }
+
+    // Rubber Base / gel system tutorial email (n8n sends it once per customer)
+    await notifyGelSystemTutorial({ orderId: order.id, email: order.buyer_email });
   }
 
   if (coursePurchases.length > 0) {

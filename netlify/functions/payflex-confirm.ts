@@ -2,6 +2,7 @@ import type { Handler } from '@netlify/functions';
 import { createClient } from '@supabase/supabase-js';
 import { enrollCourse } from './_lib/enroll-helper';
 import { notifyInstructor } from './_lib/instructor-notify';
+import { notifyGelSystemTutorial } from './_lib/tutorial-notify';
 import { WOMENS_DAY_PROMOTION_CODE } from '../../src/lib/womensDayPromotion';
 
 // Called from CheckoutSuccess when the user lands back from Payflex.
@@ -158,6 +159,9 @@ async function runFulfilment(order: any) {
     });
     console.log('✅ N8N notified');
   } catch (e) { console.error('N8N error:', e); }
+
+  // E2) Rubber Base / gel system tutorial email (n8n sends it once per customer)
+  await notifyGelSystemTutorial({ orderId: order.id, email: order.buyer_email });
 
   // F) Uber
   const uberQuoteId = order.delivery_address?.uber_quote_id;
