@@ -14,7 +14,7 @@ import { sanitizeShadeRequest, validateShadeRequest } from '../../src/lib/shadeR
 import { resolveAttribution } from './_lib/affiliate'
 import crypto from 'crypto'
 import { isBundleInStock } from '../../src/lib/stockAvailability'
-import { evaluateLuckyPetalPrize, isLuckyPetalCode } from '../../src/lib/luckyPetal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
 import { attachLuckyPetalOrder, isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
 
 export const handler: Handler = async (event) => {
@@ -476,9 +476,6 @@ export const handler: Handler = async (event) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ error, code: 'LUCKY_PETAL' })
         })
-        if (orderKind !== 'product') {
-          return jsonError(400, 'Lucky Petal prizes can only be used on product orders.')
-        }
         const redemption = await loadLuckyPetalRedemption({
           code: couponCode,
           authHeader: event.headers.authorization || (event.headers as any).Authorization,
@@ -486,6 +483,25 @@ export const handler: Handler = async (event) => {
           serviceKey: SERVICE_KEY
         })
         if (isLuckyPetalFailure(redemption)) return jsonError(redemption.status, redemption.error)
+
+        if (isOnlineCoursePrize(redemption.prize)) {
+          // Online-course prizes only work on an online course purchase. The course
+          // type comes from the catalogue, never from the browser.
+          if (orderKind !== 'course') {
+            return jsonError(400, 'Your Lucky Petal prize is for BLOM online workshops. Use it when you buy a course.')
+          }
+          const courseSlug = String(body.course_booking?.course_slug || '')
+          const courseRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/courses?slug=eq.${encodeURIComponent(courseSlug)}&select=course_type&limit=1`,
+            { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+          )
+          const courseRows = courseRes.ok ? await courseRes.json() : []
+          if (!courseSlug || courseRows?.[0]?.course_type !== 'online') {
+            return jsonError(400, 'Your Lucky Petal prize only works on BLOM online workshops.')
+          }
+        } else if (orderKind !== 'product') {
+          return jsonError(400, 'This Lucky Petal prize is for shop orders, not courses.')
+        }
 
         const buyerEmail = String(body.shippingInfo?.email || body.buyer?.email || '').toLowerCase().trim()
         if (buyerEmail !== redemption.accountEmail) {

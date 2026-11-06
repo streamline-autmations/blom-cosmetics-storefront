@@ -1,5 +1,5 @@
 import React from 'react';
-import { evaluateLuckyPetalPrize, formatRand, type LuckyPetalSpin } from '../../lib/luckyPetal';
+import { evaluateLuckyPetalPrize, formatRand, isOnlineCoursePrize, type LuckyPetalSpin } from '../../lib/luckyPetal';
 
 // Checkout card for a customer holding an unused Lucky Petal prize: shows how close
 // the basket is to unlocking it, and confirms once it is applied.
@@ -15,6 +15,17 @@ type Props = {
 
 export const LuckyPetalCheckoutNudge: React.FC<Props> = ({ spin, subtotalCents, applied, giftName, onUse, busy }) => {
   if (spin.status !== 'awarded' || spin.prize.kind === 'course') return null;
+  if (isOnlineCoursePrize(spin.prize)) {
+    return (
+      <div className="rounded-xl border border-[#FFCCDE] bg-[#FFF0F6] p-3">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-[#E8538A]">Your Lucky Petal</p>
+        <p className="mt-1 text-sm text-[#3a1626]">
+          {spin.prize.title} works on our online workshops.{' '}
+          <a href="/courses" className="font-semibold text-[#E8538A] underline-offset-2 hover:underline">See the courses</a>
+        </p>
+      </div>
+    );
+  }
   const evaluation = evaluateLuckyPetalPrize(spin.prize, subtotalCents);
   const min = Math.max(0, spin.prize.min_order_cents || 0);
   const progress = min > 0 ? Math.min(1, subtotalCents / min) : 1;

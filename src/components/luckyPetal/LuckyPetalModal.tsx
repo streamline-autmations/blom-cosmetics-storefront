@@ -3,6 +3,7 @@ import { Check, Copy, X } from 'lucide-react';
 import { LuckyPetalWheel } from './LuckyPetalWheel';
 import {
   describeLuckyPetalConditions,
+  isOnlineCoursePrize,
   wheelTargetRotation,
   type LuckyPetalSegment,
   type LuckyPetalSpin,
@@ -313,7 +314,7 @@ const Invitation: React.FC<{
         Your Black Friday surprise is waiting to BLOM.
       </h2>
       <p className="mt-4 text-[15px] leading-6 text-[#6b4a58]">
-        Every petal is a gift: free BLOM tools and cuticle oils, money off your order, or the rare Golden Petal, a free online workshop.
+        Every slice is a gift: a free BLOM Hand File, money off your order or an online course, or the rare free Flower Nail Art Workshop.
       </p>
 
       <div className="mt-7">
@@ -385,6 +386,8 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
   const [copied, setCopied] = useState(false);
   const prize = spin.prize;
   const isCourse = prize.kind === 'course';
+  // Free workshop, or money off an online course: both send people to the courses.
+  const toCourses = isCourse || isOnlineCoursePrize(prize);
   const isMystery = /mystery/i.test(prize.title);
   const deadline = prize.redeem_ends_at ? formatSastDeadline(prize.redeem_ends_at) : null;
   const used = spin.status === 'redeemed' || spin.status === 'fulfilled';
@@ -438,7 +441,10 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
             </button>
           </div>
           <p className="mt-2 text-xs leading-5 text-[#8a6b78]">
-            Added for you at checkout when you are logged in{deadline ? `. Use it by ${deadline}.` : '.'}
+            {isOnlineCoursePrize(prize)
+              ? 'Added for you when you buy an online workshop while logged in'
+              : 'Added for you at checkout when you are logged in'}
+            {deadline ? `. Use it by ${deadline}.` : '.'}
           </p>
         </>
       )}
@@ -446,10 +452,10 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row">
         {!used && (
           <a
-            href={isCourse ? '/courses' : '/shop'}
+            href={toCourses ? '/courses' : '/shop'}
             className="lp-cta inline-flex flex-1 items-center justify-center rounded-full bg-[#FF74A4] px-6 py-3.5 text-sm font-bold tracking-[0.12em] text-white hover:bg-[#E8538A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4] focus-visible:ring-offset-2"
           >
-            {isCourse ? 'SEE THE WORKSHOPS' : 'SHOP NOW'}
+            {toCourses ? 'SEE THE WORKSHOPS' : 'SHOP NOW'}
           </a>
         )}
         <button

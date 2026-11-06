@@ -86,6 +86,12 @@ test('conditions read naturally', () => {
   );
 });
 
+test('online-course prizes describe where they work', () => {
+  const course = prize({ kind: 'percent', percent_off: 25, min_order_cents: 0, applies_to: 'online_courses' });
+  assert.equal(describeLuckyPetalConditions(course), 'On any BLOM online workshop · one course only');
+  assert.equal(evaluateLuckyPetalPrize(course, 48000).discountCents, 12000);
+});
+
 test('formatRand groups thousands and keeps cents only when needed', () => {
   assert.equal(formatRand(120000), 'R1,200');
   assert.equal(formatRand(3500), 'R35');

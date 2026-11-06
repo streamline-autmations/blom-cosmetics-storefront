@@ -6,7 +6,7 @@ import {
   TRENDY_RING_OFFER_PRODUCT_SLUGS
 } from './_lib/trendy-ring-offer'
 import { isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
-import { evaluateLuckyPetalPrize, isLuckyPetalCode } from '../../src/lib/luckyPetal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
 
 type CartInput = {
   product_id?: string
@@ -93,6 +93,19 @@ export const handler: Handler = async (event) => {
           statusCode: redemption.status,
           headers,
           body: JSON.stringify({ ok: false, valid: false, error: redemption.error })
+        }
+      }
+
+      if (isOnlineCoursePrize(redemption.prize)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            ok: false,
+            valid: false,
+            error: 'Your Lucky Petal prize is for BLOM online workshops. Use it when you buy a course.',
+            offer_type: 'lucky_petal'
+          })
         }
       }
 

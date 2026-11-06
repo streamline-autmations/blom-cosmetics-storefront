@@ -22,8 +22,14 @@ export type LuckyPetalPrizeSnapshot = {
   amount_off_cents?: number | null;
   max_discount_cents?: number | null;
   min_order_cents?: number | null;
+  /** Where the prize can be used. Missing on older spins = products. */
+  applies_to?: 'products' | 'online_courses' | null;
   redeem_ends_at?: string | null;
 };
+
+/** True for prizes that only work when buying an online course. */
+export const isOnlineCoursePrize = (prize: LuckyPetalPrizeSnapshot): boolean =>
+  prize.applies_to === 'online_courses';
 
 export type LuckyPetalSegment = {
   id: string;
@@ -152,6 +158,7 @@ export function describeLuckyPetalConditions(prize: LuckyPetalPrizeSnapshot): st
   const cap = Math.round(prize.max_discount_cents || 0);
   const parts: string[] = [];
   if (prize.kind === 'course') return 'No purchase needed. We will email you within 24 hours.';
+  if (isOnlineCoursePrize(prize)) return 'On any BLOM online workshop · one course only';
   if (min > 0) parts.push(`On orders of ${formatRand(min)} or more`);
   if (prize.kind === 'percent' && cap > 0) parts.push(`up to ${formatRand(cap)} off`);
   parts.push('one order only');

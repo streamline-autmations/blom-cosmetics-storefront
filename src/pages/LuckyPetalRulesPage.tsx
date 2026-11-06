@@ -103,6 +103,7 @@ export const LuckyPetalRulesPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-900">6. Using your prize</h2>
                 <ul className="list-disc space-y-1 pl-5">
                   <li>Discount and gift prizes apply to one online order, placed while logged in to the account that won them, using that account&apos;s email at checkout.</li>
+                  <li>The online-course prize applies to one BLOM online workshop bought on our website. It does not apply to shop products or in-person courses.</li>
                   <li>Each prize shows its minimum order value. It is measured on product prices before delivery.</li>
                   <li>Percentage prizes have a maximum discount, shown with the prize.</li>
                   <li>A gift prize is added to your order free of charge. If it sells out before you order, contact us and we will offer a similar item.</li>
@@ -112,10 +113,10 @@ export const LuckyPetalRulesPage: React.FC = () => {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900">7. The Golden Petal</h2>
+                <h2 className="text-xl font-semibold text-gray-900">7. The free workshop prize</h2>
                 <p>
-                  The Golden Petal is one free BLOM Academy online workshop of the winner&apos;s choice. No purchase is
-                  needed. We will contact the winner by email within 24 hours. It cannot be exchanged for cash.
+                  The free workshop prize is the online Flower Nail Art Workshop. No purchase is needed. We will contact
+                  the winner by email within 24 hours to set up access. It cannot be exchanged for cash.
                 </p>
               </section>
 

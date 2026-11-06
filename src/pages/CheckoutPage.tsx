@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { LuckyPetalCheckoutNudge } from '../components/luckyPetal/LuckyPetalCheckoutNudge';
-import { evaluateLuckyPetalPrize, isLuckyPetalCode } from '../lib/luckyPetal';
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../lib/luckyPetal';
 import { useLuckyPetalState } from '../lib/luckyPetalClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '../components/layout/Header';
@@ -763,6 +763,7 @@ export const CheckoutPage: React.FC = () => {
 
   useEffect(() => {
     if (!luckyPetalSpin || luckyPetalSpin.status !== 'awarded' || luckyPetalSpin.prize.kind === 'course') return;
+    if (isOnlineCoursePrize(luckyPetalSpin.prize)) return;
     if (luckyPetalOptOut || appliedCoupon || isApplyingCoupon || !shippingInfo.email || cartState.items.length === 0) return;
     const subtotalCents = Math.round(cartState.subtotal * 100);
     if (!evaluateLuckyPetalPrize(luckyPetalSpin.prize, subtotalCents).eligible) return;
