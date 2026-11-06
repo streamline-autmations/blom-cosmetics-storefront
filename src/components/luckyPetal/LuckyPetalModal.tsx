@@ -99,6 +99,14 @@ export const LuckyPetalHost: React.FC = () => {
 
     const path = window.location.pathname;
     if (QUIET_PATHS.some((pattern) => pattern.test(path))) return;
+
+    // Preview mode (staff testing): pop up on the homepage on every load.
+    if (state.mode === 'preview') {
+      if (path !== '/') return;
+      const timer = window.setTimeout(() => setIsOpen(true), AUTO_DELAY_MS);
+      return () => window.clearTimeout(timer);
+    }
+
     if (state.my_spin || state.reason === 'spins_closed') return;
     if (storage.get(localStorage, DISMISSED_KEY(state.campaign_id))) return;
     if (storage.get(sessionStorage, AUTO_SESSION_KEY)) return;
@@ -139,11 +147,13 @@ const LuckyPetalModal: React.FC<{
   // The wheel's petals are frozen while the modal is open, so a background refresh can
   // never swap a petal out from under a spin that is already turning.
   const [segments, setSegments] = useState<LuckyPetalSegment[]>(state.segments);
-  const [spin, setSpin] = useState<LuckyPetalSpin | null>(state.my_spin);
-  const [phase, setPhase] = useState<Phase>(state.my_spin ? 'revealed' : 'ready');
+  // Preview (staff testing): ignore the previous test spin so every open can spin again.
+  const startingSpin = state.mode === 'preview' ? null : state.my_spin;
+  const [spin, setSpin] = useState<LuckyPetalSpin | null>(startingSpin);
+  const [phase, setPhase] = useState<Phase>(startingSpin ? 'revealed' : 'ready');
   const [rotation, setRotation] = useState(() => {
-    if (!state.my_spin) return 0;
-    const index = state.segments.findIndex((s) => s.id === state.my_spin!.prize_id);
+    if (!startingSpin) return 0;
+    const index = state.segments.findIndex((s) => s.id === startingSpin.prize_id);
     return index >= 0 ? wheelTargetRotation(0, index, state.segments.length, 0, 0) : 0;
   });
   const [freshWin, setFreshWin] = useState(false);
@@ -246,7 +256,7 @@ const LuckyPetalModal: React.FC<{
         </button>
 
         {/* Wheel side */}
-        <div className="relative flex shrink-0 items-center justify-center overflow-hidden bg-[#FFF0F6] px-6 pb-4 pt-10 md:w-[48%] md:px-8 md:py-10">
+        <div className="relative flex shrink-0 items-center justify-center overflow-hidden bg-[#FFF0F6] px-3 pb-3 pt-8 md:w-[50%] md:px-4 md:py-7">
           <div
             aria-hidden="true"
             className="absolute left-1/2 top-1/2 h-[118%] w-[118%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(206,229,255,0.85)_0%,rgba(206,229,255,0)_62%)] md:h-[105%] md:w-[105%]"
@@ -259,7 +269,7 @@ const LuckyPetalModal: React.FC<{
             burst={freshWin}
             reducedMotion={reducedMotion}
             onSpinEnd={finishSpin}
-            className="relative w-[min(76vw,300px)] sm:w-[340px] md:w-full md:max-w-[380px]"
+            className="relative w-[min(86vw,340px)] sm:w-[370px] md:w-full md:max-w-[420px]"
           />
         </div>
 
@@ -345,7 +355,7 @@ const Invitation: React.FC<{
           </p>
         )}
 
-        {(state.can_spin || busy) && (
+        {(state.can_spin || busy || (state.mode === 'preview' && state.reason === 'already_spun')) && (
           <button
             type="button"
             onClick={onSpin}
