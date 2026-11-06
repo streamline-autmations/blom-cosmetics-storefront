@@ -301,6 +301,7 @@ declare
   v_acc      bigint := 0;
   v_prize    public.lucky_petal_prizes;
   v_cand     public.lucky_petal_prizes;
+  v_list     public.lucky_petal_prizes[];
   v_gift     uuid;
   v_code     text;
   v_tries    int := 0;
@@ -343,20 +344,25 @@ begin
   end if;
 
   -- Weighted draw over the prizes that can still be won, using pgcrypto's CSPRNG.
-  select coalesce(sum(weight), 0) into v_total
-    from public.lucky_petal_available_prizes(c.id, v_preview);
+  -- The list is read once so the total and the walk can't disagree if stock moves.
+  select array_agg(p order by p.sort_order) into v_list
+    from public.lucky_petal_available_prizes(c.id, v_preview) p;
+  select coalesce(sum((x).weight), 0) into v_total from unnest(v_list) x;
   if v_total <= 0 then
     return jsonb_build_object('ok', false, 'error', 'no_prizes');
   end if;
 
   v_roll := ('x' || encode(extensions.gen_random_bytes(6), 'hex'))::bit(48)::bigint % v_total;
-  for v_cand in select * from public.lucky_petal_available_prizes(c.id, v_preview) loop
+  foreach v_cand in array v_list loop
     v_acc := v_acc + v_cand.weight;
     if v_roll < v_acc then
       v_prize := v_cand;
       exit;
     end if;
   end loop;
+  if v_prize.id is null then
+    return jsonb_build_object('ok', false, 'error', 'no_prizes');
+  end if;
 
   if v_prize.kind = 'gift' then
     select g.pid into v_gift
@@ -364,6 +370,9 @@ begin
      where public.lucky_petal_product_in_stock(g.pid)
      order by extensions.gen_random_bytes(4)
      limit 1;
+    if v_gift is null then
+      return jsonb_build_object('ok', false, 'error', 'no_prizes');
+    end if;
   end if;
 
   loop
@@ -455,17 +464,20 @@ create trigger lucky_petal_order_paid
 
 -- ---------------------------------------------------------------- grants
 
-revoke execute on function public.lucky_petal_state(text)                     from public;
-revoke execute on function public.lucky_petal_spin(text)                      from public;
-revoke execute on function public.lucky_petal_attach_order(uuid, text)        from public;
-revoke execute on function public.lucky_petal_on_order_paid()                 from public;
-revoke execute on function public.lucky_petal_available_prizes(text, boolean) from public;
-revoke execute on function public.lucky_petal_product_in_stock(uuid)          from public;
-revoke execute on function public.lucky_petal_spin_json(public.lucky_petal_spins) from public;
-revoke execute on function public.lucky_petal_is_staff()                      from public;
+-- Supabase grants EXECUTE on new functions to anon and authenticated directly (default
+-- privileges), so each role is revoked by name, not just PUBLIC.
+revoke execute on function public.lucky_petal_state(text)                         from public, anon, authenticated;
+revoke execute on function public.lucky_petal_spin(text)                          from public, anon, authenticated;
+revoke execute on function public.lucky_petal_attach_order(uuid, text)            from public, anon, authenticated;
+revoke execute on function public.lucky_petal_on_order_paid()                     from public, anon, authenticated;
+revoke execute on function public.lucky_petal_available_prizes(text, boolean)     from public, anon, authenticated;
+revoke execute on function public.lucky_petal_product_in_stock(uuid)              from public, anon, authenticated;
+revoke execute on function public.lucky_petal_spin_json(public.lucky_petal_spins) from public, anon, authenticated;
+revoke execute on function public.lucky_petal_is_staff()                          from public, anon, authenticated;
 
 grant execute on function public.lucky_petal_state(text)              to anon, authenticated, service_role;
 grant execute on function public.lucky_petal_spin(text)               to authenticated;
+-- Used inside RLS policies, so the querying role needs it.
 grant execute on function public.lucky_petal_is_staff()               to authenticated;
 grant execute on function public.lucky_petal_attach_order(uuid, text) to service_role;
 
@@ -500,7 +512,7 @@ values
    '15% off orders of R1,500 or more (up to R250 off).',
    'percent', 15, null, 25000, 150000, '{}', 12, null, 'pink'),
   ('black-friday-2026', 5, 'MYSTERY', 'Gift', 'A mystery nail-art gift',
-   'A little surprise from the BLOM studio, added free to your order of R1,000 or more. It''s revealed when your parcel arrives.',
+   'A little surprise from the BLOM studio, added free to your order of R1,000 or more.',
    'gift', null, null, null, 100000, array[
      '08780890-d020-4b6d-ac0a-04560c59a150', '6daaa692-f0f4-4386-9f98-8b9575702930',
      '90842592-38b2-49fa-bf2e-85ef08edcb8a', 'fda50e87-55a7-4344-b74d-abd49ee6eab2',
