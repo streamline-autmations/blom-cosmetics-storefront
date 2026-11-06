@@ -5,6 +5,8 @@ import {
   TRENDY_RING_OFFER_PRICE_CENTS,
   TRENDY_RING_OFFER_PRODUCT_SLUGS
 } from './_lib/trendy-ring-offer'
+import { isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode } from '../../src/lib/luckyPetal'
 
 type CartInput = {
   product_id?: string
@@ -77,6 +79,79 @@ export const handler: Handler = async (event) => {
         unit_price_cents: unitPriceCents
       }
     })
+
+    // BLOM Lucky Petal prize codes are bound to the account that spun them.
+    if (isLuckyPetalCode(normalizedCode)) {
+      const redemption = await loadLuckyPetalRedemption({
+        code: normalizedCode,
+        authHeader: event.headers.authorization || event.headers.Authorization,
+        supabaseUrl,
+        serviceKey
+      })
+      if (isLuckyPetalFailure(redemption)) {
+        return {
+          statusCode: redemption.status,
+          headers,
+          body: JSON.stringify({ ok: false, valid: false, error: redemption.error })
+        }
+      }
+
+      const subtotalCents = canonicalCart.reduce((sum, item) => sum + item.quantity * item.unit_price_cents, 0)
+      const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents)
+      if (!evaluation.eligible) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            ok: false,
+            valid: false,
+            error: evaluation.message,
+            shortfall_cents: evaluation.shortfallCents,
+            offer_type: 'lucky_petal'
+          })
+        }
+      }
+
+      let gift: { id: string; name: string; image_url: string | null } | null = null
+      if (evaluation.addsGift) {
+        const { data: giftProduct } = await supabase
+          .from('products')
+          .select('id,name,image_url')
+          .eq('id', redemption.giftProductId)
+          .maybeSingle()
+        if (!giftProduct) {
+          return {
+            statusCode: 409,
+            headers,
+            body: JSON.stringify({ ok: false, valid: false, error: 'Your Lucky Petal gift could not be found. Please contact us.' })
+          }
+        }
+        gift = {
+          id: String(giftProduct.id),
+          name: String(giftProduct.name),
+          image_url: giftProduct.image_url ? String(giftProduct.image_url) : null
+        }
+      }
+
+      const prize = redemption.prize
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          ok: true,
+          valid: true,
+          code: normalizedCode,
+          discount_cents: evaluation.discountCents,
+          discount_type: prize.kind === 'percent' ? 'percent' : 'fixed',
+          discount_value: prize.kind === 'percent' ? prize.percent_off : evaluation.discountCents / 100,
+          max_discount_cents: prize.max_discount_cents || 0,
+          min_order_cents: prize.min_order_cents || 0,
+          message: evaluation.message,
+          offer_type: 'lucky_petal',
+          lucky_petal: { title: prize.title, kind: prize.kind, gift }
+        })
+      }
+    }
 
     const { data: benefit } = await supabase
       .from('course_benefits')

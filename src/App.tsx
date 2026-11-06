@@ -43,6 +43,7 @@ const ManageAddresses = lazy(() => import('./pages/ManageAddresses'));
 const StockMovementPage = lazy(() => import('./pages/StockMovementPage'));
 const CourseOfferClaimPage = lazy(() => import('./pages/CourseOfferClaimPage').then(m => ({ default: m.CourseOfferClaimPage })));
 const PartnerPortalPage = lazy(() => import('./pages/PartnerPortalPage').then(m => ({ default: m.PartnerPortalPage })));
+const LuckyPetalRulesPage = lazy(() => import('./pages/LuckyPetalRulesPage').then(m => ({ default: m.LuckyPetalRulesPage })));
 
 /**
  * Prefetch next likely routes on idle to improve perceived performance.
@@ -123,6 +124,7 @@ function App() {
           {/* Legal Pages */}
           <Route path="/privacy" element={<PageWithCart><PrivacyPage /></PageWithCart>} />
           <Route path="/terms" element={<PageWithCart><TermsPage /></PageWithCart>} />
+          <Route path="/lucky-petal" element={<PageWithCart><LuckyPetalRulesPage /></PageWithCart>} />
           <Route path="/returns" element={<PageWithCart><ReturnsPage /></PageWithCart>} />
           <Route path="/cookie-policy" element={<PageWithCart><CookiePolicyPage /></PageWithCart>} />
           

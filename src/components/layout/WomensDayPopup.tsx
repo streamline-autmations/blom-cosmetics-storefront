@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { luckyPetalHoldsTheStage } from '../../lib/luckyPetalClient';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { Countdown } from '../ui/Countdown';
 import {
@@ -51,7 +52,11 @@ export const WomensDayPopup: React.FC = () => {
 
     window.__blomSignup = window.__blomSignup || {};
     window.__blomSignup.hasShown = true;
-    timerRef.current = window.setTimeout(() => setIsOpen(true), SHOW_DELAY_MS);
+    timerRef.current = window.setTimeout(() => {
+      // Black Friday: the Lucky Petal wheel owns the visit while it runs.
+      if (luckyPetalHoldsTheStage()) return;
+      setIsOpen(true);
+    }, SHOW_DELAY_MS);
 
     return () => {
       if (timerRef.current) window.clearTimeout(timerRef.current);

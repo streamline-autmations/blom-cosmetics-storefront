@@ -1,0 +1,142 @@
+/* BLOM Lucky Petal wheel. One motion idea: a long soft slow-down, then the winning
+   petal blooms forward. Everything here respects prefers-reduced-motion. */
+
+.lp-wheel {
+  filter: drop-shadow(0 18px 40px rgba(232, 83, 138, 0.18));
+}
+
+.lp-wheel text {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.lp-petals {
+  transition: opacity 0.5s ease;
+}
+
+.lp-petals--dim {
+  opacity: 0.42;
+}
+
+.lp-hub {
+  box-shadow:
+    0 0 0 6px #ffe6f0,
+    0 8px 22px rgba(166, 17, 41, 0.14);
+}
+
+.lp-pointer {
+  filter: drop-shadow(0 3px 4px rgba(166, 17, 41, 0.25));
+}
+
+.lp-bloom {
+  /* With transform-box: view-box the reference box starts at the user-space origin,
+     which this wheel puts at its centre. So 0 0 = scale from the middle of the flower. */
+  transform-box: view-box;
+  transform-origin: 0 0;
+  transform: scale(1.06);
+  filter: drop-shadow(0 10px 14px rgba(166, 17, 41, 0.22));
+}
+
+.lp-bloom--animate {
+  animation: lp-bloom 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+
+@keyframes lp-bloom {
+  0% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 0 rgba(166, 17, 41, 0));
+  }
+  60% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1.06);
+    filter: drop-shadow(0 10px 14px rgba(166, 17, 41, 0.22));
+  }
+}
+
+/* The Golden Petal catches the light once. */
+.lp-bloom--gold path {
+  animation: lp-gold-glint 1.8s ease-in-out 0.6s both;
+}
+
+@keyframes lp-gold-glint {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  45% {
+    filter: brightness(1.22) saturate(1.1);
+  }
+}
+
+.lp-burst path {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lp-burst 1.1s cubic-bezier(0.16, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes lp-burst {
+  0% {
+    opacity: 0;
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 0.4;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: var(--lp-dx) var(--lp-dy);
+    rotate: var(--lp-rot);
+    scale: 1;
+  }
+}
+
+/* Spin button: a soft press, nothing flashy. */
+.lp-cta {
+  transition:
+    background-color 0.2s ease,
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+  box-shadow: 0 10px 24px rgba(255, 116, 164, 0.35);
+}
+
+.lp-cta:hover:not(:disabled) {
+  box-shadow: 0 12px 28px rgba(232, 83, 138, 0.4);
+}
+
+.lp-cta:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.lp-reveal {
+  animation: lp-reveal 0.5s ease-out both;
+}
+
+@keyframes lp-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-bloom--animate,
+  .lp-bloom--gold path,
+  .lp-burst path,
+  .lp-reveal {
+    animation: none !important;
+  }
+  .lp-burst {
+    display: none;
+  }
+  .lp-petals {
+    transition: none;
+  }
+}

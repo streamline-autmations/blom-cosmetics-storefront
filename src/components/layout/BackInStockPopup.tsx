@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { luckyPetalHoldsTheStage } from '../../lib/luckyPetalClient';
 import { X, Sparkles, Check } from 'lucide-react';
 import { womensDayPromotionIsLive } from '../../lib/womensDayPromotion';
 
@@ -64,6 +65,8 @@ export const BackInStockPopup: React.FC = () => {
     }
 
     timerRef.current = window.setTimeout(() => {
+      // Black Friday: the Lucky Petal wheel owns the visit while it runs.
+      if (luckyPetalHoldsTheStage()) return;
       setIsOpen(true);
     }, SHOW_DELAY_MS);
 
