@@ -161,6 +161,8 @@ type Props = {
   onSpinEnd?: () => void;
   /** Stand the wheel on a little pedestal. */
   stand?: boolean;
+  /** Show "TAP TO SPIN" in the hub (phones), with a soft pulse. */
+  tapLabel?: boolean;
   className?: string;
 };
 
@@ -175,6 +177,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
   onTick,
   onSpinEnd,
   stand = false,
+  tapLabel = false,
   className = '',
 }) => {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -502,6 +505,17 @@ export const LuckyPetalWheel: React.FC<Props> = ({
           <circle r={HUB_R + 4} fill={url('rimGold')} />
           <circle r={HUB_R - 1} fill={url('hub')} />
           <circle r={HUB_R - 6} fill="none" stroke="#F3D58A" strokeOpacity={0.35} strokeWidth={1} />
+          {tapLabel && (
+            <g>
+              <circle r={HUB_R + 4} className="lp-hub-pulse" fill="none" stroke="#FF8DB5" strokeWidth={3} />
+              <text y={-7} textAnchor="middle" dominantBaseline="central" fontSize={23} fontWeight={900} fill="#FFFFFF" letterSpacing="0.06em">
+                TAP
+              </text>
+              <text y={15} textAnchor="middle" dominantBaseline="central" fontSize={9.5} fontWeight={800} fill="#FF8DB5" letterSpacing="0.26em">
+                TO SPIN
+              </text>
+            </g>
+          )}
 
           {/* Pointer: a gold pendant with a pink heart, hinged at the top. */}
           <g className="lp-pointer">
@@ -531,7 +545,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
           alt=""
           aria-hidden="true"
           draggable={false}
-          className="lp-hub-logo pointer-events-none absolute left-1/2 top-1/2 w-[17%] -translate-x-1/2 -translate-y-1/2"
+          className={`lp-hub-logo pointer-events-none absolute left-1/2 top-1/2 w-[17%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-300 ${tapLabel ? 'opacity-0' : 'opacity-100'}`}
         />
       </div>
     </div>

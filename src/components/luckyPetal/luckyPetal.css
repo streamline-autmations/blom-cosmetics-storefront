@@ -131,7 +131,7 @@
     inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-@media (max-width: 767px) {
+@media (max-width: 1023px) {
   .lp-stage {
     background:
       radial-gradient(80% 42% at 50% 26%, rgba(255, 116, 164, 0.32) 0%, rgba(255, 116, 164, 0) 72%),
@@ -150,6 +150,72 @@
   position: absolute;
   color: #f6da92;
   opacity: 0.55;
+}
+
+/* Layout. Phones: headline, wheel, details stacked on one screen (the wheel's width
+   is measured to fit). Desktop: wheel on the left, headline and details on the right. */
+.lp-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: 'head' 'wheel' 'body';
+}
+
+@media (min-width: 1024px) {
+  .lp-layout {
+    grid-template-columns: 55% minmax(0, 1fr);
+    grid-template-rows: 1fr auto auto 1fr;
+    grid-template-areas: 'wheel .' 'wheel head' 'wheel body' 'wheel .';
+  }
+}
+
+.lp-area-head {
+  grid-area: head;
+}
+
+.lp-area-wheel {
+  grid-area: wheel;
+}
+
+.lp-area-body {
+  grid-area: body;
+}
+
+@media (max-width: 1023px) {
+  .lp-wheelbox {
+    transition: width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) 0.15s;
+  }
+}
+
+/* Tap the wheel: a soft press, and a pulse round the hub while it waits. */
+.lp-tap .lp-wheel {
+  transition: transform 0.15s ease;
+}
+
+.lp-tap[role='button']:active .lp-wheel {
+  transform: scale(0.985);
+}
+
+.lp-tap:focus-visible {
+  outline: 3px solid #ff8db5;
+  outline-offset: 6px;
+}
+
+.lp-hub-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: lp-hub-pulse 1.8s ease-out infinite;
+}
+
+@keyframes lp-hub-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 /* Text side steps back while the wheel spins. */
@@ -229,12 +295,14 @@
 
 @media (prefers-reduced-motion: reduce) {
   .lp-wheel .lp-bulb,
+  .lp-hub-pulse,
   .lp-glow,
   .lp-reveal {
     animation: none !important;
   }
   .lp-dim,
   .lp-story,
+  .lp-wheelbox,
   .lp-cta {
     transition: none;
   }
