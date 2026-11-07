@@ -129,7 +129,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
       aria-label={
         winner
           ? `Lucky Petal wheel stopped on ${winner.title}`
-          : `Lucky Petal prize wheel with ${count} prizes: ${segments.map((s) => s.title).join(', ')}`
+          : `Lucky Petal prize wheel with prizes: ${Array.from(new Set(segments.map((s) => s.title))).join(', ')}`
       }
     >
       {/* Spinning layer: slices, labels, rim and pearls. */}
@@ -149,7 +149,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
           <circle r={RIM_OUTER} fill="url(#lp-rim)" />
           <g className={`lp-slices ${winner ? 'lp-slices--settled' : ''}`}>
             {segments.map((segment, index) => (
-              <g key={segment.id} transform={`rotate(${index * sweep})`}>
+              <g key={`${segment.id}-${index}`} transform={`rotate(${index * sweep})`}>
                 <path d={path} fill={(TONES[segment.tone] || TONES.pink).fill} />
                 <SliceLabel segment={segment} />
               </g>
@@ -158,7 +158,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
           {/* Hairlines between slices */}
           {segments.map((segment, index) => {
             const p = polar(index * sweep + sweep / 2, SLICE_R);
-            return <line key={`line-${segment.id}`} x1={0} y1={0} x2={p.x} y2={p.y} stroke="#FFFFFF" strokeOpacity={0.85} strokeWidth={1.5} />;
+            return <line key={`line-${segment.id}-${index}`} x1={0} y1={0} x2={p.x} y2={p.y} stroke="#FFFFFF" strokeOpacity={0.85} strokeWidth={1.5} />;
           })}
           <circle r={SLICE_R} fill="url(#lp-shade)" pointerEvents="none" />
           <circle r={SLICE_R + 1} fill="none" stroke="#FFFFFF" strokeWidth={3} />
@@ -167,7 +167,7 @@ export const LuckyPetalWheel: React.FC<Props> = ({
             const edge = polar(index * sweep + sweep / 2, PEARL_R);
             const mid = polar(index * sweep, PEARL_R);
             return (
-              <g key={`pearl-${segment.id}`}>
+              <g key={`pearl-${segment.id}-${index}`}>
                 <circle cx={edge.x} cy={edge.y} r={5.5} fill="#FFFFFF" />
                 <circle cx={edge.x - 1.5} cy={edge.y - 1.5} r={1.6} fill="#FFE6F0" />
                 <circle cx={mid.x} cy={mid.y} r={3} fill="#FFFFFF" opacity={0.85} />

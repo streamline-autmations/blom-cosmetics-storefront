@@ -1,5 +1,6 @@
 import React from 'react';
 import { LuckyPetalWheel } from './LuckyPetalWheel';
+import { wheelSlices } from '../../lib/luckyPetal';
 import { openLuckyPetal, useLuckyPetalState } from '../../lib/luckyPetalClient';
 
 // Homepage band for the Black Friday Lucky Petal. Renders nothing unless the campaign
@@ -21,7 +22,7 @@ export const LuckyPetalBanner: React.FC = () => {
           />
           <div className="relative -rotate-[14deg]">
             <LuckyPetalWheel
-              segments={state.segments}
+              segments={wheelSlices(state.segments)}
               rotation={0}
               spinning={false}
               bloomIndex={null}
@@ -44,7 +45,7 @@ export const LuckyPetalBanner: React.FC = () => {
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-6 text-[#6b4a58] md:mx-0">
             {spin
               ? `You won ${spin.prize.title.replace(/^(A|The) /, (m) => m.toLowerCase())}. It is saved to your account and added at checkout.`
-              : 'A free Hand File, money off your order or an online course, or the rare free Flower Nail Art Workshop. One spin per BLOM account, today only.'}
+              : 'A free Hand File, money off your order, or the rare free Flower Nail Art Workshop. One spin per BLOM account, today only.'}
           </p>
           <button
             type="button"

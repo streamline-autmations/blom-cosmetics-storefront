@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Copy, X } from 'lucide-react';
 import { LuckyPetalWheel } from './LuckyPetalWheel';
 import {
@@ -8,6 +8,9 @@ import {
   type LuckyPetalSegment,
   type LuckyPetalSpin,
   type LuckyPetalState,
+  segmentUnderPointer,
+  sliceIndexForPrize,
+  wheelSlices,
 } from '../../lib/luckyPetal';
 import {
   fetchLuckyPetalState,
@@ -148,14 +151,17 @@ const LuckyPetalModal: React.FC<{
   // The wheel's petals are frozen while the modal is open, so a background refresh can
   // never swap a petal out from under a spin that is already turning.
   const [segments, setSegments] = useState<LuckyPetalSegment[]>(state.segments);
+  // What is drawn: small prize lists repeat, so a prize can sit on more than one slice.
+  const slices = useMemo(() => wheelSlices(segments), [segments]);
   // Preview (staff testing): ignore the previous test spin so every open can spin again.
   const startingSpin = state.mode === 'preview' ? null : state.my_spin;
   const [spin, setSpin] = useState<LuckyPetalSpin | null>(startingSpin);
   const [phase, setPhase] = useState<Phase>(startingSpin ? 'revealed' : 'ready');
   const [rotation, setRotation] = useState(() => {
     if (!startingSpin) return 0;
-    const index = state.segments.findIndex((s) => s.id === startingSpin.prize_id);
-    return index >= 0 ? wheelTargetRotation(0, index, state.segments.length, 0, 0) : 0;
+    const initial = wheelSlices(state.segments);
+    const index = sliceIndexForPrize(initial, startingSpin.prize_id, () => 0);
+    return index >= 0 ? wheelTargetRotation(0, index, initial.length, 0, 0) : 0;
   });
   const [freshWin, setFreshWin] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -204,15 +210,15 @@ const LuckyPetalModal: React.FC<{
       return;
     }
 
-    let wheel = segments;
-    let index = wheel.findIndex((s) => s.id === result.spin.prize_id);
+    let wheel = slices;
+    let index = sliceIndexForPrize(wheel, result.spin.prize_id);
     if (index < 0) {
       // The prize list changed since the modal opened; reload it (it always includes ours).
       const fresh = await fetchLuckyPetalState(true);
       if (fresh.visible) {
-        wheel = fresh.segments;
-        index = wheel.findIndex((s) => s.id === result.spin.prize_id);
-        setSegments(wheel);
+        wheel = wheelSlices(fresh.segments);
+        index = sliceIndexForPrize(wheel, result.spin.prize_id);
+        setSegments(fresh.segments);
       }
     }
 
@@ -231,8 +237,12 @@ const LuckyPetalModal: React.FC<{
     requestAnimationFrame(() => setRotation((current) => wheelTargetRotation(current, index, wheel.length, 6, jitter)));
   };
 
-  const bloomIndex =
-    phase === 'revealed' && spin ? segments.findIndex((s) => s.id === spin.prize_id) : null;
+  // Highlight the copy the wheel actually stopped on (falls back to the first copy).
+  const bloomIndex = (() => {
+    if (phase !== 'revealed' || !spin || slices.length === 0) return null;
+    const under = segmentUnderPointer(rotation, slices.length);
+    return slices[under]?.id === spin.prize_id ? under : sliceIndexForPrize(slices, spin.prize_id, () => 0);
+  })();
 
   return (
     <div
@@ -263,7 +273,7 @@ const LuckyPetalModal: React.FC<{
             className="absolute left-1/2 top-1/2 h-[118%] w-[118%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(206,229,255,0.85)_0%,rgba(206,229,255,0)_62%)] md:h-[105%] md:w-[105%]"
           />
           <LuckyPetalWheel
-            segments={segments}
+            segments={slices}
             rotation={rotation}
             spinning={phase === 'spinning'}
             bloomIndex={bloomIndex !== null && bloomIndex >= 0 ? bloomIndex : null}
@@ -314,7 +324,7 @@ const Invitation: React.FC<{
         Your Black Friday surprise is waiting to BLOM.
       </h2>
       <p className="mt-4 text-[15px] leading-6 text-[#6b4a58]">
-        Every slice is a gift: a free BLOM Hand File, money off your order or an online course, or the rare free Flower Nail Art Workshop.
+        Every slice is a gift: a free BLOM Hand File, money off your order, or the rare free Flower Nail Art Workshop.
       </p>
 
       <div className="mt-7">

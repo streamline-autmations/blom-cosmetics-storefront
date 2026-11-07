@@ -6,8 +6,11 @@ import {
   formatRand,
   isLuckyPetalCode,
   segmentUnderPointer,
+  sliceIndexForPrize,
+  wheelSlices,
   wheelTargetRotation,
   type LuckyPetalPrizeSnapshot,
+  type LuckyPetalSegment,
 } from './luckyPetal';
 
 const prize = (overrides: Partial<LuckyPetalPrizeSnapshot>): LuckyPetalPrizeSnapshot => ({
@@ -117,4 +120,19 @@ test('the wheel always stops on the segment the server picked', () => {
       }
     }
   }
+});
+
+test('small prize lists show each prize twice and land on one of its copies', () => {
+  const seg = (id: string): LuckyPetalSegment => ({ id, sort_order: 0, line1: id, line2: '', title: id, tone: 'pink', odds_pct: 25 });
+  const slices = wheelSlices(['a', 'b', 'c', 'd'].map(seg));
+  assert.deepEqual(slices.map((s) => s.id), ['a', 'b', 'c', 'd', 'a', 'b', 'c', 'd']);
+  assert.equal(sliceIndexForPrize(slices, 'c', () => 0), 2);
+  assert.equal(sliceIndexForPrize(slices, 'c', () => 0.99), 6);
+  assert.equal(sliceIndexForPrize(slices, 'zz'), -1);
+  for (const random of [0, 0.5, 0.999]) {
+    const index = sliceIndexForPrize(slices, 'd', () => random);
+    const target = wheelTargetRotation(0, index, slices.length, 6, 0.8);
+    assert.equal(slices[segmentUnderPointer(target, slices.length)].id, 'd');
+  }
+  assert.equal(wheelSlices(['a', 'b', 'c', 'd', 'e', 'f'].map(seg)).length, 6);
 });

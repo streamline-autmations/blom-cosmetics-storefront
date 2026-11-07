@@ -200,3 +200,26 @@ export function segmentUnderPointer(rotation: number, count: number): number {
   const normalized = ((-rotation % 360) + 360) % 360;
   return Math.round(normalized / sweep) % count;
 }
+
+/**
+ * The slices drawn on the wheel. With five prizes or fewer each prize appears twice
+ * (A B C D A B C D) so the wheel looks full. Odds are unchanged: they come from the
+ * server's draw, not from how many slices a prize has.
+ */
+export function wheelSlices(segments: LuckyPetalSegment[]): LuckyPetalSegment[] {
+  return segments.length > 0 && segments.length <= 5 ? [...segments, ...segments] : segments;
+}
+
+/** Slice to land on for a prize: one of its copies, chosen by `random` (0..1). -1 if absent. */
+export function sliceIndexForPrize(
+  slices: LuckyPetalSegment[],
+  prizeId: string,
+  random: () => number = Math.random,
+): number {
+  const matches: number[] = [];
+  slices.forEach((slice, index) => {
+    if (slice.id === prizeId) matches.push(index);
+  });
+  if (matches.length === 0) return -1;
+  return matches[Math.min(matches.length - 1, Math.floor(Math.max(0, random()) * matches.length))];
+}
