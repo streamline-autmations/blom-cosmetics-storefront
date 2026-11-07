@@ -112,10 +112,11 @@ export const LuckyPetalRulesPage: React.FC = () => {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900">7. The free workshop prize</h2>
+                <h2 className="text-xl font-semibold text-gray-900">7. The mystery gift</h2>
                 <p>
-                  The free workshop prize is the online Flower Nail Art Workshop. No purchase is needed. We will contact
-                  the winner by email within 24 hours to set up access. It cannot be exchanged for cash.
+                  The mystery gift is one BLOM product chosen at random from a set of gifts when you win. It is added
+                  free to one online order of R1,000 or more. If it sells out before you order, we will offer a similar
+                  item. It cannot be exchanged for cash or for a different product.
                 </p>
               </section>
 

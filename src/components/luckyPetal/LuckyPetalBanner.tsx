@@ -74,7 +74,7 @@ export const LuckyPetalBanner: React.FC = () => {
           <p className="mx-auto mt-4 max-w-md text-[15px] leading-6 text-white/70 md:mx-0">
             {spin
               ? `You won ${spin.prize.title.replace(/^(A|The) /, (m) => m.toLowerCase())}. It is saved to your account and added at checkout.`
-              : 'A free BLOM Hand File, money off your order, or the rare free Flower Nail Art Workshop. One spin per BLOM account, today only.'}
+              : 'A free BLOM Hand File, money off your order, or a rare mystery gift. One spin per BLOM account, today only.'}
           </p>
           <button
             type="button"
