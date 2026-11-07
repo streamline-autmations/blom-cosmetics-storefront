@@ -1,112 +1,200 @@
-/* BLOM Lucky Petal wheel. One motion idea: a long soft slow-down, then the winning
-   slice lifts forward. Everything here respects prefers-reduced-motion. */
-
-.lp-wheel {
-  filter: drop-shadow(0 22px 40px rgba(232, 83, 138, 0.3));
-}
+/* BLOM Lucky Petal.
+   One motion idea, borrowed from a nail tech's vanity mirror: the bulbs round the
+   wheel. They twinkle while it waits, chase while it spins (faster when it is fast),
+   and all flash together when it lands. Everything else stays calm. */
 
 .lp-wheel text {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-.lp-slices {
-  transition: opacity 0.5s ease;
-}
-
-/* Once the wheel stops, the other slices step back a little. */
-.lp-slices--settled {
-  opacity: 0.72;
-}
-
-.lp-hub {
+.lp-wheel__shadow {
   box-shadow:
-    0 0 0 5px #ffe6f0,
-    0 0 0 7px #ffffff,
-    0 8px 22px rgba(166, 17, 41, 0.18);
+    0 34px 70px rgba(0, 0, 0, 0.6),
+    0 0 110px rgba(255, 116, 164, 0.35);
+}
+
+/* The logo file is black on white: inverted and screened it becomes white on the hub. */
+.lp-hub-logo {
+  filter: invert(1);
+  mix-blend-mode: screen;
 }
 
 .lp-pointer {
-  filter: drop-shadow(0 4px 5px rgba(166, 17, 41, 0.3));
+  filter: drop-shadow(0 5px 4px rgba(0, 0, 0, 0.45));
 }
 
-.lp-win {
-  /* With transform-box: view-box the reference box starts at the user-space origin,
-     which this wheel puts at its centre. So 0 0 = scale from the middle of the wheel. */
-  transform-box: view-box;
-  transform-origin: 0 0;
-  transform: scale(1.05);
-  filter: drop-shadow(0 8px 14px rgba(166, 17, 41, 0.3));
+/* ---------------------------------------------------------------- bulbs */
+
+.lp-bulb {
+  opacity: 0.95;
 }
 
-.lp-win--animate {
-  animation: lp-win 0.9s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+.lp-wheel[data-pace='idle'] .lp-bulb {
+  animation: lp-bulb-twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -0.1625s); /* a slow wave round the rim */
 }
 
-@keyframes lp-win {
-  0% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 0 rgba(166, 17, 41, 0));
-  }
-  60% {
-    transform: scale(1.09);
-  }
-  100% {
-    transform: scale(1.05);
-    filter: drop-shadow(0 8px 14px rgba(166, 17, 41, 0.3));
-  }
+.lp-wheel[data-pace='fast'] .lp-bulb,
+.lp-wheel[data-pace='mid'] .lp-bulb,
+.lp-wheel[data-pace='slow'] .lp-bulb {
+  animation: lp-bulb-chase 0.64s linear infinite;
+  animation-delay: calc(var(--i) * 0.04s);
 }
 
-/* The Golden Petal catches the light once. */
-.lp-win--gold path {
-  animation: lp-gold-glint 1.8s ease-in-out 0.6s both;
+.lp-wheel[data-pace='mid'] .lp-bulb {
+  animation-duration: 1.1s;
+  animation-delay: calc(var(--i) * 0.069s);
 }
 
-@keyframes lp-gold-glint {
+.lp-wheel[data-pace='slow'] .lp-bulb {
+  animation-duration: 1.9s;
+  animation-delay: calc(var(--i) * 0.119s);
+}
+
+.lp-wheel--celebrate[data-pace='stop'] .lp-bulb {
+  animation: lp-bulb-flash 0.36s ease-in-out 7;
+}
+
+.lp-wheel--celebrate .lp-bulb__glow {
+  transform: scale(1.35);
+  transition: transform 0.4s ease;
+}
+
+@keyframes lp-bulb-twinkle {
   0%,
   100% {
-    filter: brightness(1);
+    opacity: 0.55;
   }
-  45% {
-    filter: brightness(1.22) saturate(1.1);
-  }
-}
-
-.lp-burst path {
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: lp-burst 1.1s cubic-bezier(0.16, 0.8, 0.3, 1) forwards;
-}
-
-@keyframes lp-burst {
-  0% {
-    opacity: 0;
-    translate: 0 0;
-    rotate: 0deg;
-    scale: 0.4;
-  }
-  15% {
+  50% {
     opacity: 1;
   }
+}
+
+@keyframes lp-bulb-chase {
+  0% {
+    opacity: 1;
+  }
+  25% {
+    opacity: 0.3;
+  }
   100% {
-    opacity: 0;
-    translate: var(--lp-dx) var(--lp-dy);
-    rotate: var(--lp-rot);
-    scale: 1;
+    opacity: 0.3;
   }
 }
 
-/* Spin button: a soft press, nothing flashy. */
-.lp-cta {
-  transition:
-    background-color 0.2s ease,
-    transform 0.15s ease,
-    box-shadow 0.2s ease;
-  box-shadow: 0 10px 24px rgba(255, 116, 164, 0.35);
+@keyframes lp-bulb-flash {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.15;
+  }
 }
 
-.lp-cta:hover:not(:disabled) {
-  box-shadow: 0 12px 28px rgba(232, 83, 138, 0.4);
+/* ---------------------------------------------------------------- landing */
+
+.lp-dim {
+  fill: #12060c;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.lp-dim--on {
+  opacity: 0.55;
+}
+
+.lp-glow {
+  animation: lp-glow 1.6s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 231, 163, 0.9));
+}
+
+@keyframes lp-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- stage */
+
+.lp-stage {
+  background:
+    radial-gradient(52% 62% at 29% 50%, rgba(255, 116, 164, 0.3) 0%, rgba(255, 116, 164, 0) 70%),
+    radial-gradient(38% 44% at 92% 4%, rgba(206, 229, 255, 0.12) 0%, rgba(206, 229, 255, 0) 70%),
+    linear-gradient(158deg, #220c18 0%, #13060d 52%, #090306 100%);
+  box-shadow:
+    0 40px 120px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 767px) {
+  .lp-stage {
+    background:
+      radial-gradient(80% 42% at 50% 26%, rgba(255, 116, 164, 0.32) 0%, rgba(255, 116, 164, 0) 72%),
+      linear-gradient(180deg, #220c18 0%, #13060d 55%, #090306 100%);
+  }
+}
+
+/* Soft spotlight rays behind the wheel. */
+.lp-rays {
+  background: repeating-conic-gradient(from 0deg, rgba(255, 190, 215, 0.075) 0deg 4deg, rgba(255, 190, 215, 0) 4deg 12deg);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 66%);
+  mask-image: radial-gradient(circle, #000 18%, transparent 66%);
+}
+
+.lp-sparkle {
+  position: absolute;
+  color: #f6da92;
+  opacity: 0.55;
+}
+
+/* Text side steps back while the wheel spins. */
+.lp-story {
+  transition: opacity 0.5s ease;
+}
+
+.lp-story--hushed {
+  opacity: 0.35;
+}
+
+/* ---------------------------------------------------------------- buttons and reveal */
+
+.lp-cta {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ff8db5 0%, #ff5c95 100%);
+  box-shadow:
+    0 14px 34px rgba(255, 92, 149, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.25s ease,
+    filter 0.25s ease;
+}
+
+.lp-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+  transform: translateX(-120%);
+}
+
+@media (hover: hover) {
+  .lp-cta:hover:not(:disabled) {
+    filter: brightness(1.05);
+    box-shadow:
+      0 18px 40px rgba(255, 92, 149, 0.55),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+  .lp-cta:hover:not(:disabled)::after {
+    transform: translateX(120%);
+    transition: transform 0.8s ease;
+  }
 }
 
 .lp-cta:active:not(:disabled) {
@@ -114,13 +202,13 @@
 }
 
 .lp-reveal {
-  animation: lp-reveal 0.5s ease-out both;
+  animation: lp-reveal 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 @keyframes lp-reveal {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(14px);
   }
   to {
     opacity: 1;
@@ -128,17 +216,26 @@
   }
 }
 
+/* The code card: a ticket with notches. */
+.lp-ticket {
+  position: relative;
+  -webkit-mask:
+    radial-gradient(circle 11px at 0 50%, transparent 10.5px, #000 11px) left / 51% 100% no-repeat,
+    radial-gradient(circle 11px at 100% 50%, transparent 10.5px, #000 11px) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 11px at 0 50%, transparent 10.5px, #000 11px) left / 51% 100% no-repeat,
+    radial-gradient(circle 11px at 100% 50%, transparent 10.5px, #000 11px) right / 51% 100% no-repeat;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .lp-win--animate,
-  .lp-win--gold path,
-  .lp-burst path,
+  .lp-wheel .lp-bulb,
+  .lp-glow,
   .lp-reveal {
     animation: none !important;
   }
-  .lp-burst {
-    display: none;
-  }
-  .lp-slices {
+  .lp-dim,
+  .lp-story,
+  .lp-cta {
     transition: none;
   }
 }

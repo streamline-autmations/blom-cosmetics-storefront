@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Check, Copy, X } from 'lucide-react';
-import { LuckyPetalWheel } from './LuckyPetalWheel';
+import { Check, Copy, Volume2, VolumeX, X } from 'lucide-react';
+import { LuckyPetalWheel, luckyPetalSwatch } from './LuckyPetalWheel';
+import { LuckyPetalConfetti } from './LuckyPetalConfetti';
+import { buzz, playTick, playWin, primeSound, setSoundEnabled, soundEnabled } from './luckyPetalSound';
 import {
   describeLuckyPetalConditions,
   isOnlineCoursePrize,
-  wheelTargetRotation,
+  sliceIndexForPrize,
+  wheelSlices,
   type LuckyPetalSegment,
   type LuckyPetalSpin,
   type LuckyPetalState,
-  segmentUnderPointer,
-  sliceIndexForPrize,
-  wheelSlices,
 } from '../../lib/luckyPetal';
 import {
   fetchLuckyPetalState,
@@ -80,6 +80,9 @@ const storage = {
 export const LuckyPetalHost: React.FC = () => {
   const { state, loaded, refresh } = useLuckyPetalState();
   const [isOpen, setIsOpen] = useState(false);
+  // Preview mode pops up on every page load, but only once per load: closing it
+  // must not bring it straight back.
+  const previewShownRef = useRef(false);
 
   useEffect(() => {
     const open = () => setIsOpen(true);
@@ -90,6 +93,7 @@ export const LuckyPetalHost: React.FC = () => {
   useEffect(() => {
     // Safe to re-run (StrictMode, state refreshes): every decision below is idempotent,
     // and the session flag is only set when the popup actually opens.
+    if (isOpen) previewShownRef.current = true; // opened any way at all counts
     if (!loaded || !state.visible || isOpen) return;
 
     const params = new URLSearchParams(window.location.search);
@@ -106,8 +110,11 @@ export const LuckyPetalHost: React.FC = () => {
 
     // Preview mode (staff testing): pop up on the homepage on every load.
     if (state.mode === 'preview') {
-      if (path !== '/') return;
-      const timer = window.setTimeout(() => setIsOpen(true), AUTO_DELAY_MS);
+      if (path !== '/' || previewShownRef.current) return;
+      const timer = window.setTimeout(() => {
+        previewShownRef.current = true;
+        setIsOpen(true);
+      }, AUTO_DELAY_MS);
       return () => window.clearTimeout(timer);
     }
 
@@ -139,8 +146,26 @@ export const LuckyPetalHost: React.FC = () => {
   );
 };
 
+
 type VisibleState = Extract<LuckyPetalState, { visible: true }>;
 type Phase = 'ready' | 'requesting' | 'spinning' | 'revealed';
+
+// Wind-up + throw + a little grace, in case the tab is hidden mid-spin.
+const SPIN_FALLBACK_MS = 520 + 8200 + 2500;
+
+const isRare = (segment: { odds_pct: number }) => segment.odds_pct > 0 && segment.odds_pct < 5;
+
+/** "A free BLOM Hand File" -> "Free BLOM Hand File" */
+const listTitle = (title: string) => {
+  const trimmed = title.replace(/^(A|An|The) /, '');
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+};
+
+const Sparkle: React.FC<{ className: string; size: number }> = ({ className, size }) => (
+  <svg aria-hidden="true" viewBox="0 0 24 24" width={size} height={size} className={`lp-sparkle ${className}`}>
+    <path d="M12 0C13 7 17 11 24 12C17 13 13 17 12 24C11 17 7 13 0 12C7 11 11 7 12 0Z" fill="currentColor" />
+  </svg>
+);
 
 const LuckyPetalModal: React.FC<{
   state: VisibleState;
@@ -148,8 +173,8 @@ const LuckyPetalModal: React.FC<{
   onClose: () => void;
 }> = ({ state, onRefresh, onClose }) => {
   const reducedMotion = usePrefersReducedMotion();
-  // The wheel's petals are frozen while the modal is open, so a background refresh can
-  // never swap a petal out from under a spin that is already turning.
+  // The prize list is frozen while the popup is open, so a background refresh can
+  // never swap a slice out from under a spin that is already turning.
   const [segments, setSegments] = useState<LuckyPetalSegment[]>(state.segments);
   // What is drawn: small prize lists repeat, so a prize can sit on more than one slice.
   const slices = useMemo(() => wheelSlices(segments), [segments]);
@@ -157,16 +182,21 @@ const LuckyPetalModal: React.FC<{
   const startingSpin = state.mode === 'preview' ? null : state.my_spin;
   const [spin, setSpin] = useState<LuckyPetalSpin | null>(startingSpin);
   const [phase, setPhase] = useState<Phase>(startingSpin ? 'revealed' : 'ready');
-  const [rotation, setRotation] = useState(() => {
-    if (!startingSpin) return 0;
-    const initial = wheelSlices(state.segments);
-    const index = sliceIndexForPrize(initial, startingSpin.prize_id, () => 0);
-    return index >= 0 ? wheelTargetRotation(0, index, initial.length, 0, 0) : 0;
-  });
+  const [targetIndex, setTargetIndex] = useState<number | null>(() =>
+    startingSpin ? sliceIndexForPrize(wheelSlices(state.segments), startingSpin.prize_id, () => 0) : null,
+  );
+  const [spinKey, setSpinKey] = useState(0);
   const [freshWin, setFreshWin] = useState(false);
+  const [confettiKey, setConfettiKey] = useState(0);
+  const [confettiOrigin, setConfettiOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [sound, setSound] = useState(soundEnabled);
   const [error, setError] = useState<string | null>(null);
   const closeRef = useRef<HTMLButtonElement | null>(null);
+  const wheelBoxRef = useRef<HTMLDivElement | null>(null);
+  const storyRef = useRef<HTMLDivElement | null>(null);
+  const stageRef = useRef<HTMLDivElement | null>(null);
   const endedRef = useRef(false);
+  const rareRef = useRef(false);
 
   useEffect(() => {
     const html = document.documentElement;
@@ -188,18 +218,40 @@ const LuckyPetalModal: React.FC<{
     if (endedRef.current) return;
     endedRef.current = true;
     setPhase('revealed');
+    const rect = wheelBoxRef.current?.getBoundingClientRect();
+    if (rect) setConfettiOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.width / 2 });
+    setConfettiKey((key) => key + 1);
+    playWin(rareRef.current);
+    buzz([30, 50, 70]);
+    // On phones the prize text sits under the wheel: bring it into view.
+    window.setTimeout(() => {
+      if (window.innerWidth < 768) storyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 1100);
     void onRefresh();
   }, [onRefresh]);
 
-  // If the tab is hidden mid-spin the transition may never report its end.
+  // If the tab is hidden mid-spin the animation may never report its end.
   useEffect(() => {
     if (phase !== 'spinning') return;
-    const timer = window.setTimeout(finishSpin, reducedMotion ? 300 : 7000);
+    const timer = window.setTimeout(finishSpin, reducedMotion ? 600 : SPIN_FALLBACK_MS);
     return () => window.clearTimeout(timer);
   }, [phase, finishSpin, reducedMotion]);
 
+  const handleTick = useCallback((speed: number) => {
+    playTick();
+    if (speed < 160) buzz(6);
+  }, []);
+
+  const toggleSound = () => {
+    const next = !sound;
+    setSoundEnabled(next);
+    setSound(next);
+    if (next) primeSound();
+  };
+
   const handleSpin = async () => {
     if (phase !== 'ready') return;
+    primeSound(); // must happen inside the tap
     setError(null);
     setPhase('requesting');
     const result = await spinLuckyPetal();
@@ -213,99 +265,114 @@ const LuckyPetalModal: React.FC<{
     let wheel = slices;
     let index = sliceIndexForPrize(wheel, result.spin.prize_id);
     if (index < 0) {
-      // The prize list changed since the modal opened; reload it (it always includes ours).
+      // The prize list changed since the popup opened; reload it (it always includes ours).
       const fresh = await fetchLuckyPetalState(true);
       if (fresh.visible) {
+        setSegments(fresh.segments);
         wheel = wheelSlices(fresh.segments);
         index = sliceIndexForPrize(wheel, result.spin.prize_id);
-        setSegments(fresh.segments);
       }
     }
 
     setSpin(result.spin);
+    rareRef.current = result.spin.prize.kind === 'course' || result.spin.prize.tone === 'gold';
     if (index < 0 || result.alreadySpun) {
+      setTargetIndex(index >= 0 ? index : null);
       setPhase('revealed');
-      if (index >= 0) setRotation(wheelTargetRotation(0, index, wheel.length, 0, 0));
       return;
     }
 
     endedRef.current = false;
     setFreshWin(true);
+    setTargetIndex(index);
+    setSpinKey((key) => key + 1);
     setPhase('spinning');
-    const jitter = Math.random() * 2 - 1;
-    // Next frame so the wheel has the transition before the new angle lands.
-    requestAnimationFrame(() => setRotation((current) => wheelTargetRotation(current, index, wheel.length, 6, jitter)));
+    // On phones the button sits under the wheel: bring the wheel back into view.
+    if (window.innerWidth < 768) stageRef.current?.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
   };
 
-  // Highlight the copy the wheel actually stopped on (falls back to the first copy).
-  const bloomIndex = (() => {
-    if (phase !== 'revealed' || !spin || slices.length === 0) return null;
-    const under = segmentUnderPointer(rotation, slices.length);
-    return slices[under]?.id === spin.prize_id ? under : sliceIndexForPrize(slices, spin.prize_id, () => 0);
-  })();
+  const wheelMode = phase === 'spinning' ? 'spin' : phase === 'revealed' ? 'rest' : 'idle';
+  const iconButton =
+    'rounded-full bg-white/10 p-2.5 text-white/85 ring-1 ring-white/15 backdrop-blur transition hover:bg-white/20 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF8DB5] disabled:opacity-40';
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="lucky-petal-title"
-      className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#3a1626]/45 p-3 backdrop-blur-[6px] sm:p-5 motion-safe:animate-[fade-in_0.3s_ease-out]"
+      className="fixed inset-0 z-[1100] flex items-center justify-center bg-[#07020a]/75 backdrop-blur-[4px] sm:p-5 motion-safe:animate-[fade-in_0.3s_ease-out]"
       onClick={(event) => {
         if (event.target === event.currentTarget && phase !== 'spinning') onClose();
       }}
     >
-      <div className="relative flex max-h-[94vh] w-[min(900px,96vw)] flex-col overflow-y-auto overscroll-contain rounded-[28px] bg-white shadow-[0_30px_90px_rgba(58,22,38,0.35)] md:flex-row md:overflow-hidden">
-        <button
-          ref={closeRef}
-          type="button"
-          aria-label="Close Lucky Petal"
-          onClick={onClose}
-          disabled={phase === 'spinning'}
-          className="absolute right-3 top-3 z-20 rounded-full bg-white/90 p-2 text-[#7a2a4a] shadow-md transition hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4] disabled:opacity-40"
-        >
-          <X className="h-5 w-5" />
-        </button>
-
-        {/* Wheel side */}
-        <div className="relative flex shrink-0 items-center justify-center overflow-hidden bg-[#FFF0F6] px-3 pb-3 pt-8 md:w-[50%] md:px-4 md:py-7">
-          <div
-            aria-hidden="true"
-            className="absolute left-1/2 top-1/2 h-[118%] w-[118%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(206,229,255,0.85)_0%,rgba(206,229,255,0)_62%)] md:h-[105%] md:w-[105%]"
-          />
-          <LuckyPetalWheel
-            segments={slices}
-            rotation={rotation}
-            spinning={phase === 'spinning'}
-            bloomIndex={bloomIndex !== null && bloomIndex >= 0 ? bloomIndex : null}
-            burst={freshWin}
-            reducedMotion={reducedMotion}
-            onSpinEnd={finishSpin}
-            className="relative w-[min(86vw,340px)] sm:w-[370px] md:w-full md:max-w-[420px]"
-          />
+      <div ref={stageRef} className="lp-stage relative flex h-[100dvh] w-full flex-col overflow-y-auto overscroll-contain text-white sm:h-auto sm:max-h-[94vh] sm:w-[min(1080px,96vw)] sm:rounded-[32px] md:flex-row md:overflow-hidden">
+        <div className="fixed right-3 top-3 z-20 flex items-center gap-2 sm:absolute sm:right-4 sm:top-4">
+          <button
+            type="button"
+            onClick={toggleSound}
+            aria-pressed={sound}
+            aria-label={sound ? 'Turn sound off' : 'Turn sound on'}
+            className={iconButton}
+          >
+            {sound ? <Volume2 className="h-[18px] w-[18px]" /> : <VolumeX className="h-[18px] w-[18px]" />}
+          </button>
+          <button
+            ref={closeRef}
+            type="button"
+            aria-label="Close Lucky Petal"
+            onClick={onClose}
+            disabled={phase === 'spinning'}
+            className={iconButton}
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
         </div>
 
-        {/* Story side */}
-        <div className="relative flex flex-1 flex-col justify-center px-6 pb-7 pt-5 sm:px-9 md:py-10">
+        {/* The wheel, on its own under a spotlight. */}
+        <div className="relative flex shrink-0 items-center justify-center px-6 pb-3 pt-16 md:w-[55%] md:px-10 md:py-12">
+          <div aria-hidden="true" className="lp-rays pointer-events-none absolute left-1/2 top-[50%] aspect-square w-[150%] -translate-x-1/2 -translate-y-1/2 md:w-[120%]" />
+          <Sparkle className="left-[9%] top-[16%]" size={14} />
+          <Sparkle className="right-[10%] top-[24%]" size={10} />
+          <Sparkle className="left-[14%] bottom-[18%]" size={9} />
+          <Sparkle className="right-[16%] bottom-[12%] hidden md:block" size={16} />
+          <div ref={wheelBoxRef} className="relative w-[min(76vw,370px)] md:w-[min(100%,470px)]">
+            <LuckyPetalWheel
+              segments={slices}
+              mode={wheelMode}
+              targetIndex={targetIndex}
+              spinKey={spinKey}
+              highlight={phase === 'revealed'}
+              celebrate={phase === 'revealed' && freshWin}
+              reducedMotion={reducedMotion}
+              onTick={handleTick}
+              onSpinEnd={finishSpin}
+              stand
+            />
+          </div>
+        </div>
+
+        <div
+          ref={storyRef}
+          className={`lp-story relative flex flex-1 scroll-mt-4 flex-col justify-center px-6 pb-10 pt-4 sm:px-10 md:py-14 md:pl-2 md:pr-14 ${phase === 'spinning' ? 'lp-story--hushed' : ''}`}
+        >
           {phase === 'revealed' && spin ? (
             <PrizeReveal spin={spin} fresh={freshWin} onClose={onClose} />
           ) : (
-            <Invitation
-              state={state}
-              phase={phase}
-              error={error}
-              onSpin={handleSpin}
-              onRefresh={onRefresh}
-            />
+            <Invitation state={state} phase={phase} error={error} onSpin={handleSpin} onRefresh={onRefresh} />
           )}
         </div>
       </div>
+      <LuckyPetalConfetti burstKey={confettiKey} origin={confettiOrigin} rare={rareRef.current} />
     </div>
   );
 };
 
-const Eyebrow: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#E8538A]">{children}</p>
+const Eyebrow: React.FC<{ children: React.ReactNode; gold?: boolean }> = ({ children, gold }) => (
+  <p className={`text-[11px] font-semibold uppercase tracking-[0.3em] ${gold ? 'text-[#F6DA92]' : 'text-[#FF8DB5]'}`}>{children}</p>
 );
+
+const ctaClass =
+  'lp-cta inline-flex w-full items-center justify-center rounded-full px-6 py-4 text-[15px] font-bold tracking-[0.16em] text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#13060d]';
 
 const Invitation: React.FC<{
   state: VisibleState;
@@ -320,40 +387,56 @@ const Invitation: React.FC<{
   return (
     <div>
       <Eyebrow>{state.mode === 'preview' ? 'Preview · only you can see this' : 'Black Friday · One day only'}</Eyebrow>
-      <h2 id="lucky-petal-title" className="mt-3 font-serif text-[1.85rem] leading-[1.08] text-[#3a1626] sm:text-[2.2rem]">
-        Your Black Friday surprise is waiting to BLOM.
+      <h2 id="lucky-petal-title" className="mt-4 font-serif text-[2.15rem] leading-[1.04] text-white sm:text-[2.6rem] md:text-[2.85rem]">
+        Spin the wheel.
+        <span className="block italic text-[#FF8DB5]">Every slice is a gift.</span>
       </h2>
-      <p className="mt-4 text-[15px] leading-6 text-[#6b4a58]">
-        Every slice is a gift: a free BLOM Hand File, money off your order, or the rare free Flower Nail Art Workshop.
+      <p className="mt-4 max-w-md text-[15px] leading-6 text-white/70">
+        One spin per BLOM account, on Black Friday only. Whatever you land on is saved to your account, ready at
+        checkout.
       </p>
 
-      <div className="mt-7">
+      <ul className="mt-6 grid grid-cols-1 gap-x-6 gap-y-2.5 sm:grid-cols-2" aria-label="Prizes on the wheel">
+        {state.segments.map((segment) => (
+          <li key={segment.id} className="flex items-center gap-2.5 text-[13.5px] leading-5 text-white/85">
+            <span
+              aria-hidden="true"
+              className="h-3 w-3 shrink-0 rounded-full ring-1 ring-white/35"
+              style={{ background: luckyPetalSwatch(segment.tone) }}
+            />
+            <span>{listTitle(segment.title)}</span>
+            {isRare(segment) && (
+              <span className="rounded-full border border-[#F6DA92]/40 px-2 py-0.5 text-[9.5px] font-semibold uppercase tracking-[0.2em] text-[#F6DA92]">
+                Rare
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-8">
         {state.reason === 'login_required' && (
           <>
-            <a
-              href={`/login?redirect=${LOGIN_REDIRECT}`}
-              className="lp-cta inline-flex w-full items-center justify-center rounded-full bg-[#FF74A4] px-6 py-4 text-[15px] font-bold tracking-[0.14em] text-white hover:bg-[#E8538A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4] focus-visible:ring-offset-2"
-            >
+            <a href={`/login?redirect=${LOGIN_REDIRECT}`} className={ctaClass}>
               LOG IN TO SPIN
             </a>
-            <p className="mt-3 text-center text-sm text-[#6b4a58]">
+            <p className="mt-3 text-center text-sm text-white/70">
               New to BLOM?{' '}
-              <a href={`/signup?redirect=${LOGIN_REDIRECT}`} className="font-semibold text-[#E8538A] underline-offset-2 hover:underline">
+              <a href={`/signup?redirect=${LOGIN_REDIRECT}`} className="font-semibold text-[#FF8DB5] underline-offset-2 hover:underline">
                 Create your account
               </a>
             </p>
-            <p className="mt-2 text-center text-xs text-[#8a6b78]">Your prize is saved to your account, so it is waiting for you at checkout.</p>
           </>
         )}
 
         {state.reason === 'verify_email' && (
-          <div className="rounded-2xl bg-[#F0F7FF] p-4 text-sm leading-6 text-[#2D5BCC]">
-            <p className="font-semibold">Please confirm your email first.</p>
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/80">
+            <p className="font-semibold text-white">Please confirm your email first.</p>
             <p className="mt-1">We sent you a link when you signed up. Click it, then come back here to spin.</p>
             <button
               type="button"
               onClick={() => void onRefresh()}
-              className="mt-3 rounded-full border border-[#2D5BCC]/30 px-4 py-1.5 text-sm font-semibold hover:bg-white"
+              className="mt-3 rounded-full border border-white/25 px-4 py-1.5 text-sm font-semibold text-white hover:bg-white/10"
             >
               I have confirmed it
             </button>
@@ -361,30 +444,25 @@ const Invitation: React.FC<{
         )}
 
         {state.reason === 'spins_closed' && (
-          <p className="rounded-2xl bg-[#FFF0F6] p-4 text-sm leading-6 text-[#7a2a4a]">
+          <p className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/80">
             Spinning has closed for this year. Thank you for blooming with us!
           </p>
         )}
 
         {(state.can_spin || busy || (state.mode === 'preview' && state.reason === 'already_spun')) && (
-          <button
-            type="button"
-            onClick={onSpin}
-            disabled={busy}
-            className="lp-cta inline-flex w-full items-center justify-center rounded-full bg-[#FF74A4] px-6 py-4 text-[15px] font-bold tracking-[0.18em] text-white hover:bg-[#E8538A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4] focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-80"
-          >
-            {busy ? 'BLOOMING…' : 'SPIN & BLOOM'}
+          <button type="button" onClick={onSpin} disabled={busy} className={`${ctaClass} disabled:cursor-wait`}>
+            {phase === 'spinning' ? 'GOOD LUCK…' : phase === 'requesting' ? 'GETTING READY…' : 'SPIN THE WHEEL'}
           </button>
         )}
 
-        <p aria-live="polite" className="mt-3 min-h-[1.25rem] text-center text-sm text-[#C41E3A]">
+        <p aria-live="polite" className="mt-3 min-h-[1.25rem] text-center text-sm text-[#FF9EB8]">
           {error}
         </p>
       </div>
 
-      <p className="mt-2 border-t border-[#FFE6F0] pt-4 text-xs leading-5 text-[#8a6b78]">
-        One spin per BLOM account. Prizes are used on one order by {deadline}.{' '}
-        <a href="/lucky-petal" className="font-semibold text-[#E8538A] underline-offset-2 hover:underline">
+      <p className="mt-3 border-t border-white/10 pt-4 text-xs leading-5 text-white/50">
+        Prizes are used on one order by {deadline}.{' '}
+        <a href="/lucky-petal" className="font-semibold text-[#FF8DB5] underline-offset-2 hover:underline">
           Rules and odds
         </a>
       </p>
@@ -396,6 +474,7 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
   const [copied, setCopied] = useState(false);
   const prize = spin.prize;
   const isCourse = prize.kind === 'course';
+  const rare = isCourse || prize.tone === 'gold';
   // Free workshop, or money off an online course: both send people to the courses.
   const toCourses = isCourse || isOnlineCoursePrize(prize);
   const isMystery = /mystery/i.test(prize.title);
@@ -413,44 +492,48 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
   };
 
   return (
-    <div className={fresh ? 'lp-reveal' : ''} style={fresh ? { animationDelay: '0.35s' } : undefined}>
-      <Eyebrow>
-        {spin.is_preview ? 'Preview spin · not a real prize' : fresh ? 'You won' : 'Your Lucky Petal prize'}
+    <div className={fresh ? 'lp-reveal' : ''} style={fresh ? { animationDelay: '0.7s' } : undefined}>
+      <Eyebrow gold={rare}>
+        {spin.is_preview
+          ? 'Preview spin · not a real prize'
+          : fresh
+            ? rare
+              ? 'You won the rare one'
+              : 'You won'
+            : 'Your Lucky Petal prize'}
       </Eyebrow>
-      <h2 id="lucky-petal-title" className="mt-3 font-serif text-[1.85rem] leading-[1.08] text-[#3a1626] sm:text-[2.2rem]">
-        {prize.title}
+      <h2 id="lucky-petal-title" className="mt-4 font-serif text-[2.15rem] leading-[1.04] text-white sm:text-[2.6rem] md:text-[2.85rem]">
+        {listTitle(prize.title)}
       </h2>
-      {prize.description && <p className="mt-3 text-[15px] leading-6 text-[#6b4a58]">{prize.description}</p>}
-      {spin.gift && !isMystery && (
-        <p className="mt-2 text-sm font-semibold text-[#7a2a4a]">Your gift: {spin.gift.name}</p>
-      )}
+      {prize.description && <p className="mt-4 max-w-md text-[15px] leading-6 text-white/70">{prize.description}</p>}
+      {spin.gift && !isMystery && <p className="mt-2 text-sm font-semibold text-white/85">Your gift: {spin.gift.name}</p>}
 
       {used ? (
-        <p className="mt-6 rounded-2xl bg-[#F0F7FF] p-4 text-sm font-semibold text-[#2D5BCC]">
+        <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-white/85">
           {isCourse ? 'Your workshop has been set up. Enjoy!' : 'Used on your order. Thank you for blooming with us!'}
         </p>
       ) : isCourse ? (
-        <p className="mt-6 rounded-2xl bg-[#FFF8E6] p-4 text-sm leading-6 text-[#6B4512]">
+        <p className="mt-6 rounded-2xl border border-[#F6DA92]/30 bg-[#F6DA92]/10 p-4 text-sm leading-6 text-[#F6DA92]">
           We will email {spin.is_preview ? 'the winner' : 'you'} at the address on your BLOM account.
         </p>
       ) : (
         <>
-          <p className="mt-4 text-sm text-[#6b4a58]">{describeLuckyPetalConditions(prize)}</p>
-          <div className="mt-5 flex items-center gap-3 rounded-2xl border border-dashed border-[#FF99BA] bg-[#FFF0F6] px-4 py-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[#B8456F]">Your code</p>
-              <p className="mt-0.5 font-mono text-lg font-bold tracking-wider text-[#3a1626]">{spin.code}</p>
+          {!prize.description && <p className="mt-4 text-sm text-white/70">{describeLuckyPetalConditions(prize)}</p>}
+          <div className="lp-ticket mt-6 flex items-center gap-3 rounded-xl bg-white py-4 pl-6 pr-5 text-[#3a1626] sm:gap-4 sm:px-6">
+            <div className="min-w-0 flex-1 border-r border-dashed border-[#FFB3CF] pr-3 sm:pr-4">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-[#B8456F]">Your code</p>
+              <p className="mt-1 whitespace-nowrap font-mono text-[17px] font-bold tracking-wide sm:text-xl sm:tracking-wider">{spin.code}</p>
             </div>
             <button
               type="button"
               onClick={copy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-sm font-semibold text-[#E8538A] shadow-sm hover:bg-[#FFE6F0]"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-[#FFF0F6] px-3 py-2 sm:px-3.5 text-sm font-semibold text-[#E8538A] transition hover:bg-[#FFE0EC] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4]"
             >
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
           </div>
-          <p className="mt-2 text-xs leading-5 text-[#8a6b78]">
+          <p className="mt-2 text-xs leading-5 text-white/50">
             {isOnlineCoursePrize(prize)
               ? 'Added for you when you buy an online workshop while logged in'
               : 'Added for you at checkout when you are logged in'}
@@ -459,19 +542,16 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
         </>
       )}
 
-      <div className="mt-6 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center">
         {!used && (
-          <a
-            href={toCourses ? '/courses' : '/shop'}
-            className="lp-cta inline-flex flex-1 items-center justify-center rounded-full bg-[#FF74A4] px-6 py-3.5 text-sm font-bold tracking-[0.12em] text-white hover:bg-[#E8538A] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF74A4] focus-visible:ring-offset-2"
-          >
+          <a href={toCourses ? '/courses' : '/shop'} className={`${ctaClass} sm:flex-1`}>
             {toCourses ? 'SEE THE WORKSHOPS' : 'SHOP NOW'}
           </a>
         )}
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full px-6 py-3 text-sm font-semibold text-[#8a6b78] transition hover:text-[#3a1626]"
+          className="rounded-full px-6 py-3 text-sm font-semibold text-white/60 transition hover:text-white"
         >
           Close
         </button>

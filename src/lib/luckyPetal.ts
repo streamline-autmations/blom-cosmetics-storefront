@@ -7,7 +7,7 @@ export const LUCKY_PETAL_CAMPAIGN_ID = 'black-friday-2026';
 export const LUCKY_PETAL_CODE_PATTERN = /^PETAL-[0-9A-F]{8}$/;
 
 export type LuckyPetalPrizeKind = 'percent' | 'fixed' | 'gift' | 'course';
-export type LuckyPetalTone = 'pink' | 'blush' | 'blue' | 'white' | 'gold';
+export type LuckyPetalTone = 'pink' | 'blush' | 'blue' | 'white' | 'gold' | 'ink';
 
 /** The prize terms as frozen on the spin row when it was won. */
 export type LuckyPetalPrizeSnapshot = {
