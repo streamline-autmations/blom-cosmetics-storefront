@@ -39,6 +39,14 @@ export type LuckyPetalSegment = {
   title: string;
   tone: LuckyPetalTone;
   odds_pct: number;
+  // Prize terms, sent with the wheel so a demo spin can show a realistic result.
+  kind?: LuckyPetalPrizeKind;
+  description?: string | null;
+  percent_off?: number | null;
+  amount_off_cents?: number | null;
+  max_discount_cents?: number | null;
+  min_order_cents?: number | null;
+  applies_to?: 'products' | 'online_courses' | null;
 };
 
 export type LuckyPetalGift = { id: string; name: string; slug?: string | null; image_url?: string | null };
@@ -60,7 +68,8 @@ export type LuckyPetalState =
       visible: true;
       campaign_id: string;
       name: string;
-      mode: 'preview' | 'live';
+      /** demo = the test link's pretend spin for visitors who are not staff. */
+      mode: 'preview' | 'live' | 'demo';
       spin_starts_at: string;
       spin_ends_at: string;
       redeem_ends_at: string;
@@ -222,4 +231,49 @@ export function sliceIndexForPrize(
   });
   if (matches.length === 0) return -1;
   return matches[Math.min(matches.length - 1, Math.floor(Math.max(0, random()) * matches.length))];
+}
+
+/**
+ * A pretend spin for the test link's demo mode: picks a prize in the browser using the
+ * published odds. It has no code and is never saved; the real draw is always the server's.
+ */
+export function demoLuckyPetalSpin(
+  segments: LuckyPetalSegment[],
+  random: () => number = Math.random,
+): LuckyPetalSpin | null {
+  const pool = segments.filter((s) => s.odds_pct > 0);
+  if (pool.length === 0) return null;
+  const total = pool.reduce((sum, s) => sum + s.odds_pct, 0);
+  let roll = Math.max(0, Math.min(0.999999, random())) * total;
+  let pick = pool[pool.length - 1];
+  for (const segment of pool) {
+    roll -= segment.odds_pct;
+    if (roll < 0) {
+      pick = segment;
+      break;
+    }
+  }
+  return {
+    id: 'demo',
+    code: 'DEMO',
+    status: 'awarded',
+    is_preview: true,
+    created_at: new Date().toISOString(),
+    prize_id: pick.id,
+    gift: null,
+    prize: {
+      kind: pick.kind ?? 'percent',
+      title: pick.title,
+      description: pick.description ?? null,
+      line1: pick.line1,
+      line2: pick.line2,
+      tone: pick.tone,
+      sort_order: pick.sort_order,
+      percent_off: pick.percent_off ?? null,
+      amount_off_cents: pick.amount_off_cents ?? null,
+      max_discount_cents: pick.max_discount_cents ?? null,
+      min_order_cents: pick.min_order_cents ?? 0,
+      applies_to: pick.applies_to ?? 'products',
+    },
+  };
 }

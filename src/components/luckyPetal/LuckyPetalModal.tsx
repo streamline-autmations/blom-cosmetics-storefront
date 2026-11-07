@@ -4,6 +4,7 @@ import { LuckyPetalWheel, luckyPetalSwatch } from './LuckyPetalWheel';
 import { LuckyPetalConfetti } from './LuckyPetalConfetti';
 import { buzz, playTick, playWin, primeSound, setSoundEnabled, soundEnabled } from './luckyPetalSound';
 import {
+  demoLuckyPetalSpin,
   describeLuckyPetalConditions,
   isOnlineCoursePrize,
   sliceIndexForPrize,
@@ -109,7 +110,7 @@ export const LuckyPetalHost: React.FC = () => {
     if (QUIET_PATHS.some((pattern) => pattern.test(path))) return;
 
     // Preview mode (staff testing): pop up on the homepage on every load.
-    if (state.mode === 'preview') {
+    if (state.mode === 'preview' || state.mode === 'demo') {
       if (path !== '/' || previewShownRef.current) return;
       const timer = window.setTimeout(() => {
         previewShownRef.current = true;
@@ -179,7 +180,8 @@ const LuckyPetalModal: React.FC<{
   // What is drawn: small prize lists repeat, so a prize can sit on more than one slice.
   const slices = useMemo(() => wheelSlices(segments), [segments]);
   // Preview (staff testing): ignore the previous test spin so every open can spin again.
-  const startingSpin = state.mode === 'preview' ? null : state.my_spin;
+  const isDemo = state.mode === 'demo';
+  const startingSpin = state.mode === 'preview' || isDemo ? null : state.my_spin;
   const [spin, setSpin] = useState<LuckyPetalSpin | null>(startingSpin);
   const [phase, setPhase] = useState<Phase>(startingSpin ? 'revealed' : 'ready');
   const [targetIndex, setTargetIndex] = useState<number | null>(() =>
@@ -249,7 +251,33 @@ const LuckyPetalModal: React.FC<{
     if (next) primeSound();
   };
 
+  const startSpinTo = (picked: LuckyPetalSpin, index: number) => {
+    endedRef.current = false;
+    setFreshWin(true);
+    setTargetIndex(index);
+    setSpinKey((key) => key + 1);
+    setPhase('spinning');
+    // On phones the button sits under the wheel: bring the wheel back into view.
+    if (window.innerWidth < 768) stageRef.current?.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+    rareRef.current = picked.prize.kind === 'course' || picked.prize.tone === 'gold';
+    setSpin(picked);
+  };
+
   const handleSpin = async () => {
+    // Demo: a pretend spin in the browser, as many times as you like. Nothing is saved.
+    if (isDemo) {
+      if (phase === 'spinning' || phase === 'requesting') return;
+      primeSound();
+      setError(null);
+      const picked = demoLuckyPetalSpin(segments);
+      const index = picked ? sliceIndexForPrize(slices, picked.prize_id) : -1;
+      if (!picked || index < 0) {
+        setError('The wheel has no prizes right now.');
+        return;
+      }
+      startSpinTo(picked, index);
+      return;
+    }
     if (phase !== 'ready') return;
     primeSound(); // must happen inside the tap
     setError(null);
@@ -282,13 +310,7 @@ const LuckyPetalModal: React.FC<{
       return;
     }
 
-    endedRef.current = false;
-    setFreshWin(true);
-    setTargetIndex(index);
-    setSpinKey((key) => key + 1);
-    setPhase('spinning');
-    // On phones the button sits under the wheel: bring the wheel back into view.
-    if (window.innerWidth < 768) stageRef.current?.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' });
+    startSpinTo(result.spin, index);
   };
 
   const wheelMode = phase === 'spinning' ? 'spin' : phase === 'revealed' ? 'rest' : 'idle';
@@ -356,7 +378,7 @@ const LuckyPetalModal: React.FC<{
           className={`lp-story relative flex flex-1 scroll-mt-4 flex-col justify-center px-6 pb-10 pt-4 sm:px-10 md:py-14 md:pl-2 md:pr-14 ${phase === 'spinning' ? 'lp-story--hushed' : ''}`}
         >
           {phase === 'revealed' && spin ? (
-            <PrizeReveal spin={spin} fresh={freshWin} onClose={onClose} />
+            <PrizeReveal spin={spin} fresh={freshWin} onClose={onClose} onSpinAgain={isDemo ? handleSpin : undefined} />
           ) : (
             <Invitation state={state} phase={phase} error={error} onSpin={handleSpin} onRefresh={onRefresh} />
           )}
@@ -386,7 +408,13 @@ const Invitation: React.FC<{
 
   return (
     <div>
-      <Eyebrow>{state.mode === 'preview' ? 'Preview · only you can see this' : 'Black Friday · One day only'}</Eyebrow>
+      <Eyebrow>
+        {state.mode === 'preview'
+          ? 'Preview · only you can see this'
+          : state.mode === 'demo'
+            ? 'Test link · demo spin'
+            : 'Black Friday · One day only'}
+      </Eyebrow>
       <h2 id="lucky-petal-title" className="mt-4 font-serif text-[2.15rem] leading-[1.04] text-white sm:text-[2.6rem] md:text-[2.85rem]">
         Spin the wheel.
         <span className="block italic text-[#FF8DB5]">Every slice is a gift.</span>
@@ -470,7 +498,14 @@ const Invitation: React.FC<{
   );
 };
 
-const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () => void }> = ({ spin, fresh, onClose }) => {
+const PrizeReveal: React.FC<{
+  spin: LuckyPetalSpin;
+  fresh: boolean;
+  onClose: () => void;
+  /** Demo mode only: spin again straight away. */
+  onSpinAgain?: () => void;
+}> = ({ spin, fresh, onClose, onSpinAgain }) => {
+  const demo = Boolean(onSpinAgain);
   const [copied, setCopied] = useState(false);
   const prize = spin.prize;
   const isCourse = prize.kind === 'course';
@@ -494,7 +529,9 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
   return (
     <div className={fresh ? 'lp-reveal' : ''} style={fresh ? { animationDelay: '0.7s' } : undefined}>
       <Eyebrow gold={rare}>
-        {spin.is_preview
+        {demo
+          ? 'Demo spin · not a real prize'
+          : spin.is_preview
           ? 'Preview spin · not a real prize'
           : fresh
             ? rare
@@ -508,7 +545,12 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
       {prize.description && <p className="mt-4 max-w-md text-[15px] leading-6 text-white/70">{prize.description}</p>}
       {spin.gift && !isMystery && <p className="mt-2 text-sm font-semibold text-white/85">Your gift: {spin.gift.name}</p>}
 
-      {used ? (
+      {demo ? (
+        <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-white/80">
+          This is a test spin, so there is no code. On Black Friday customers log in, spin once for real, and their
+          code shows up right here.
+        </p>
+      ) : used ? (
         <p className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm font-semibold text-white/85">
           {isCourse ? 'Your workshop has been set up. Enjoy!' : 'Used on your order. Thank you for blooming with us!'}
         </p>
@@ -543,10 +585,16 @@ const PrizeReveal: React.FC<{ spin: LuckyPetalSpin; fresh: boolean; onClose: () 
       )}
 
       <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:items-center">
-        {!used && (
-          <a href={toCourses ? '/courses' : '/shop'} className={`${ctaClass} sm:flex-1`}>
-            {toCourses ? 'SEE THE WORKSHOPS' : 'SHOP NOW'}
-          </a>
+        {demo ? (
+          <button type="button" onClick={onSpinAgain} className={`${ctaClass} sm:flex-1`}>
+            SPIN AGAIN
+          </button>
+        ) : (
+          !used && (
+            <a href={toCourses ? '/courses' : '/shop'} className={`${ctaClass} sm:flex-1`}>
+              {toCourses ? 'SEE THE WORKSHOPS' : 'SHOP NOW'}
+            </a>
+          )
         )}
         <button
           type="button"

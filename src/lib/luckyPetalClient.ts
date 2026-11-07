@@ -47,6 +47,16 @@ const listeners = new Set<(state: LuckyPetalState) => void>();
 let inflight: Promise<LuckyPetalState> | null = null;
 let inflightAt = 0;
 
+/**
+ * Demo mode is only for test links (Netlify deploy previews) and local development.
+ * On the real site it is ignored even if it is left switched on in the database.
+ */
+export const luckyPetalDemoAllowedHere = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const host = window.location.hostname;
+  return /^deploy-preview-\d+--/.test(host) || host === 'localhost' || host === '127.0.0.1';
+};
+
 async function loadState(): Promise<LuckyPetalState> {
   if (!supabaseConfigured) return { visible: false };
   const { data, error } = await supabase.rpc('lucky_petal_state', { p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID });
@@ -54,7 +64,9 @@ async function loadState(): Promise<LuckyPetalState> {
     // Function missing (migration not applied) or offline: the campaign simply doesn't show.
     return { visible: false };
   }
-  return data as LuckyPetalState;
+  const state = data as LuckyPetalState;
+  if (state.visible && state.mode === 'demo' && !luckyPetalDemoAllowedHere()) return { visible: false };
+  return state;
 }
 
 /**

@@ -7,6 +7,7 @@ import {
   isLuckyPetalCode,
   segmentUnderPointer,
   sliceIndexForPrize,
+  demoLuckyPetalSpin,
   wheelSlices,
   wheelTargetRotation,
   type LuckyPetalPrizeSnapshot,
@@ -135,4 +136,15 @@ test('small prize lists show each prize twice and land on one of its copies', ()
     assert.equal(slices[segmentUnderPointer(target, slices.length)].id, 'd');
   }
   assert.equal(wheelSlices(['a', 'b', 'c', 'd', 'e', 'f'].map(seg)).length, 6);
+});
+
+test('demo spins follow the published odds and never carry a real code', () => {
+  const seg = (id: string, odds_pct: number): LuckyPetalSegment => ({ id, sort_order: 0, line1: id, line2: '', title: id, tone: 'pink', odds_pct });
+  const wheel = [seg('a', 40), seg('b', 0), seg('c', 60)];
+  assert.equal(demoLuckyPetalSpin(wheel, () => 0)?.prize_id, 'a');
+  assert.equal(demoLuckyPetalSpin(wheel, () => 0.39)?.prize_id, 'a');
+  assert.equal(demoLuckyPetalSpin(wheel, () => 0.41)?.prize_id, 'c');
+  assert.equal(demoLuckyPetalSpin(wheel, () => 1)?.prize_id, 'c');
+  assert.equal(demoLuckyPetalSpin(wheel)?.code, 'DEMO');
+  assert.equal(demoLuckyPetalSpin([seg('x', 0)]), null);
 });
