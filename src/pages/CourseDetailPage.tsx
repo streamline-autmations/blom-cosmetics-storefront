@@ -273,10 +273,7 @@ export const CourseDetailPage: React.FC = () => {
           ]
         }
       ],
-      studentDiscount: [
-        'We have a shop inside the training studio',
-        '10% discount on all product purchases during your training'
-      ],
+      studentDiscount: [],
       accordionData: [
         {
           title: 'DAY 1: FOUNDATION & PREPARATION',
@@ -504,10 +501,7 @@ export const CourseDetailPage: React.FC = () => {
           ]
         }
       ],
-      studentDiscount: [
-        'We have a shop inside the training studio',
-        '10% discount on all product purchases during your training'
-      ],
+      studentDiscount: [],
       accordionData: [
         {
           title: 'FOUNDATION: HEALTH, SAFETY & NAIL SCIENCE',
