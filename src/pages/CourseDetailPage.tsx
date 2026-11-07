@@ -9,6 +9,8 @@ import { CourseReviews, type StaticCourseReview } from '../components/course/Cou
 import { supabase } from '../lib/supabase';
 import { getAffiliateRef } from '../lib/affiliate';
 import { joinInternationalPhone } from '../lib/validation';
+import { useLuckyPetalState } from '../lib/luckyPetalClient';
+import { evaluateLuckyPetalPrize, formatRand, isOnlineCoursePrize } from '../lib/luckyPetal';
 import { 
   Clock, 
   MapPin, 
@@ -1137,6 +1139,18 @@ export const CourseDetailPage: React.FC = () => {
   };
 
   const course = courses[courseSlug as keyof typeof courses] || courses['professional-acrylic-training'];
+
+  // Black Friday Lucky Petal: an unused "% off an online course" prize is applied here.
+  const { state: luckyPetalState } = useLuckyPetalState();
+  const luckyPetalSpin = luckyPetalState.visible ? luckyPetalState.my_spin : null;
+  const luckyPetalCourseCode =
+    course.isOnline &&
+    !hasPrivateTestDiscount &&
+    luckyPetalSpin &&
+    luckyPetalSpin.status === 'awarded' &&
+    isOnlineCoursePrize(luckyPetalSpin.prize)
+      ? luckyPetalSpin.code
+      : null;
   const depositAmount = !course.isOnline ? (course.depositAmount ?? 1800) : 0;
 
   // Verified student reviews collected before the review form existed. Live reviews
@@ -1401,7 +1415,11 @@ export const CourseDetailPage: React.FC = () => {
             shipping_cents: 0,
             tax_cents: 0
           },
-          coupon: privateTestCoupon ? { code: privateTestCoupon } : null,
+          coupon: privateTestCoupon
+            ? { code: privateTestCoupon }
+            : luckyPetalCourseCode
+              ? { code: luckyPetalCourseCode }
+              : null,
           shipping: {
             method: 'collection'
           }
@@ -2189,6 +2207,18 @@ export const CourseDetailPage: React.FC = () => {
                 {/* Form Body */}
                 <div className="p-12">
                   <form onSubmit={handleSubmit} className="space-y-7">
+                    {luckyPetalCourseCode && luckyPetalSpin && (
+                      <div className="rounded-xl border border-[#FFCCDE] bg-[#FFF0F6] p-4">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#E8538A]">Your Lucky Petal</p>
+                        <p className="mt-1 text-sm font-semibold text-[#3a1626]">
+                          {luckyPetalSpin.prize.title} is added when you pay
+                          {course.numericPrice > 0
+                            ? ` (you save ${formatRand(evaluateLuckyPetalPrize(luckyPetalSpin.prize, Math.round(course.numericPrice * 100)).discountCents)}).`
+                            : '.'}
+                        </p>
+                        <p className="mt-1 text-xs text-[#8a6b78]">Use the email on your BLOM account below.</p>
+                      </div>
+                    )}
                     {/* Selection Summary */}
                     {(!selectedPackage || !selectedDate) && (
                       <div className="p-4 rounded-xl border-2 border-yellow-400 bg-yellow-50">

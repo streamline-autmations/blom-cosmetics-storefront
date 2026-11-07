@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { luckyPetalHoldsTheStage } from '../../lib/luckyPetalClient';
 import { ArrowRight, X } from 'lucide-react';
 import { useBundleStock } from '../../hooks/useBundleStock';
 
@@ -96,6 +97,8 @@ export const StarterPackPopup: React.FC = () => {
         queueCatEye(0);
         return;
       }
+      // Black Friday: the Lucky Petal wheel owns the visit while it runs.
+      if (luckyPetalHoldsTheStage()) return;
       setIsOpen(true);
     }, SHOW_DELAY_MS);
     return () => {

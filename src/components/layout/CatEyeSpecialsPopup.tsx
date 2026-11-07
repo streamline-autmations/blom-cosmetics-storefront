@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { luckyPetalHoldsTheStage } from '../../lib/luckyPetalClient';
 import { ArrowRight, X } from 'lucide-react';
 import { CAT_EYE_MOBILE_IMAGE, CAT_EYE_DESKTOP_IMAGE } from '../../lib/catEyeAssets';
 import { useBundleStock, type BundleStock } from '../../hooks/useBundleStock';
@@ -80,6 +81,8 @@ export const CatEyeSpecialsPopup: React.FC = () => {
         } catch {
           // Nothing to clean up without storage.
         }
+        // Black Friday: the Lucky Petal wheel owns the visit while it runs.
+        if (luckyPetalHoldsTheStage()) return;
         setIsOpen(true);
       }, Math.max(0, dueAt - Date.now()));
     };

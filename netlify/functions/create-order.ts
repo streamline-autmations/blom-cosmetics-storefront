@@ -14,6 +14,8 @@ import { sanitizeShadeRequest, validateShadeRequest } from '../../src/lib/shadeR
 import { resolveAttribution } from './_lib/affiliate'
 import crypto from 'crypto'
 import { isBundleInStock } from '../../src/lib/stockAvailability'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
+import { attachLuckyPetalOrder, isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
 
 export const handler: Handler = async (event) => {
   try {
@@ -452,6 +454,7 @@ export const handler: Handler = async (event) => {
     // owner of an account-bound course benefit.
     const couponCode = String(body.coupon?.code || '').trim().toUpperCase()
     let couponDiscountCents = 0
+    let luckyPetal: { spinId: string; addsGift: boolean } | null = null
 
     if (couponCode) {
       const canonicalCart = validItems.map((it) => {
@@ -464,6 +467,72 @@ export const handler: Handler = async (event) => {
         }
       })
 
+      // BLOM Lucky Petal prize: bound to the account that spun it, terms frozen on
+      // the spin. Gifts become a R0 order line so they flow through stock, invoices
+      // and packing like any other item.
+      if (isLuckyPetalCode(couponCode)) {
+        const jsonError = (statusCode: number, error: string) => ({
+          statusCode,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error, code: 'LUCKY_PETAL' })
+        })
+        const redemption = await loadLuckyPetalRedemption({
+          code: couponCode,
+          authHeader: event.headers.authorization || (event.headers as any).Authorization,
+          supabaseUrl: SUPABASE_URL,
+          serviceKey: SERVICE_KEY
+        })
+        if (isLuckyPetalFailure(redemption)) return jsonError(redemption.status, redemption.error)
+
+        if (isOnlineCoursePrize(redemption.prize)) {
+          // Online-course prizes only work on an online course purchase. The course
+          // type comes from the catalogue, never from the browser.
+          if (orderKind !== 'course') {
+            return jsonError(400, 'Your Lucky Petal prize is for BLOM online workshops. Use it when you buy a course.')
+          }
+          const courseSlug = String(body.course_booking?.course_slug || '')
+          const courseRes = await fetch(
+            `${SUPABASE_URL}/rest/v1/courses?slug=eq.${encodeURIComponent(courseSlug)}&select=course_type&limit=1`,
+            { headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` } }
+          )
+          const courseRows = courseRes.ok ? await courseRes.json() : []
+          if (!courseSlug || courseRows?.[0]?.course_type !== 'online') {
+            return jsonError(400, 'Your Lucky Petal prize only works on BLOM online workshops.')
+          }
+        } else if (orderKind !== 'product') {
+          return jsonError(400, 'This Lucky Petal prize is for shop orders, not courses.')
+        }
+
+        const buyerEmail = String(body.shippingInfo?.email || body.buyer?.email || '').toLowerCase().trim()
+        if (buyerEmail !== redemption.accountEmail) {
+          return jsonError(403, 'Use your BLOM account email at checkout to claim your Lucky Petal prize.')
+        }
+
+        const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents)
+        if (!evaluation.eligible) return jsonError(400, evaluation.message)
+
+        if (evaluation.addsGift) {
+          const giftProduct = dbProductRows.find((p: any) => String(p.id) === String(redemption.giftProductId))
+          if (!giftProduct || isProductOutOfStock(giftProduct)) {
+            return jsonError(409, 'Your Lucky Petal gift has just sold out. Please contact us and we will make it right.')
+          }
+          validItems.push({
+            resolved_id: giftProduct.id,
+            resolved_product: giftProduct,
+            base_name: giftProduct.name,
+            display_name: `Lucky Petal Gift - ${giftProduct.name}`,
+            variant_name: '',
+            quantity: 1,
+            unit_price: 0,
+            original_sku: giftProduct.sku,
+            customization: null,
+            is_lucky_petal_gift: true
+          })
+        }
+
+        couponDiscountCents = Math.min(evaluation.discountCents, subtotalCents)
+        luckyPetal = { spinId: redemption.spin.id, addsGift: evaluation.addsGift }
+      } else
       // Private, single-use owner test discount for the unlisted Trendy Ring
       // course. The coupon row is email-locked and marked server-side; the
       // public code alone is never sufficient to receive this discount.
@@ -646,7 +715,7 @@ export const handler: Handler = async (event) => {
 
     const womensDayPromotion = calculateWomensDayPromotion(
       orderKind === 'product'
-        ? validItems.map((item) => ({
+        ? validItems.filter((item) => !item.is_lucky_petal_gift).map((item) => ({
             productId: item.resolved_id,
             slug: item.resolved_product?.slug,
             category: item.resolved_product?.category,
@@ -658,7 +727,7 @@ export const handler: Handler = async (event) => {
     )
     const catEyeOffer = calculateCatEyeTwoForOffer(
       orderKind === 'product'
-        ? validItems.map((item) => ({
+        ? validItems.filter((item) => !item.is_lucky_petal_gift).map((item) => ({
             productId: item.resolved_id,
             slug: item.resolved_product?.slug,
             unitPriceCents: item.unit_price,
@@ -675,7 +744,11 @@ export const handler: Handler = async (event) => {
       couponCode
     )
     const discountCents = discountChoice.discountCents
-    const finalDiscountCode = discountChoice.code
+    let finalDiscountCode = discountChoice.code
+    // A gift prize has no money value, so keep its code on the order explicitly.
+    if (luckyPetal?.addsGift && !finalDiscountCode) finalDiscountCode = couponCode
+    // A discount prize only counts as used when it is the discount that applied.
+    const luckyPetalApplied = Boolean(luckyPetal && (luckyPetal.addsGift || discountChoice.source === 'coupon'))
 
     // 3. Create Order via RPC
     const rpcPayload = {
@@ -689,7 +762,7 @@ export const handler: Handler = async (event) => {
       // 4. CONSTRUCT ITEM NAMES & PRICES CORRECTLY
       p_items: validItems.map(it => {
         // Start with the Real DB Name if we found it, otherwise use what the frontend sent
-        let finalDisplayName = it.resolved_product ? it.resolved_product.name : it.base_name;
+        let finalDisplayName = it.display_name || (it.resolved_product ? it.resolved_product.name : it.base_name);
         
         // Append Variant Name if it exists
         if (it.variant_name) {
@@ -765,6 +838,15 @@ export const handler: Handler = async (event) => {
       if (!discountSourceRes.ok) {
         console.warn('Could not persist order discount source:', await discountSourceRes.text())
       }
+    }
+
+    if (order?.order_id && luckyPetal && luckyPetalApplied) {
+      await attachLuckyPetalOrder({
+        spinId: luckyPetal.spinId,
+        orderId: String(order.order_id),
+        supabaseUrl: SUPABASE_URL,
+        serviceKey: SERVICE_KEY
+      })
     }
 
     // Affiliate attribution. Entirely non-fatal: a tracking failure must never stop a

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { luckyPetalHoldsTheStage } from '../../lib/luckyPetalClient';
 import { ArrowRight, X } from 'lucide-react';
 import { supabase, supabaseConfigured } from '../../lib/supabase';
 import { isProductInStock } from '../../lib/stockAvailability';
@@ -101,6 +102,8 @@ export const HemelBlouGlowPopup: React.FC = () => {
       }
       // Sold out or off the shop — nothing to sell.
       if (availableRef.current === false) return;
+      // Black Friday: the Lucky Petal wheel owns the visit while it runs.
+      if (luckyPetalHoldsTheStage()) return;
       setIsOpen(true);
     }, SHOW_DELAY_MS);
     return () => {
