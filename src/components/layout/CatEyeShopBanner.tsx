@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Maximize2, X } from 'lucide-react';
 import { Container } from './Container';
 import { CAT_EYE_DESKTOP_IMAGE } from '../../lib/catEyeAssets';
-import { useCatEyeSpecials } from './CatEyeSpecialsPopup';
+import { useCatEyeSpecials } from '../../hooks/useCatEyeSpecials';
 
 // Permanent shop-page reinforcement for the Nude Cat Eye Collection —
 // CatEyeSpecialsPopup only shows once per session, so this slim strip keeps
