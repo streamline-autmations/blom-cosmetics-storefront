@@ -1323,10 +1323,16 @@ button {
   font-size: 10px !important;
 }
 
-/* HemelBlou Glow popup: the Shop button charges up to a glow once, like glow pigment
-   after light exposure, then settles to a steady soft halo. */
-@keyframes glow-charge {
-  0% { box-shadow: 0 0 0 rgba(143, 230, 255, 0); }
-  55% { box-shadow: 0 0 34px 6px rgba(143, 230, 255, 0.75); }
-  100% { box-shadow: 0 0 22px 2px rgba(143, 230, 255, 0.45); }
+/* Grinch Christmas popup: the Shop button charges up to a Grinch-green glow once, like the
+   glow acrylic in the collection, then settles to a steady soft halo. */
+@keyframes grinch-glow {
+  0% { box-shadow: 0 0 0 rgba(197, 238, 43, 0); }
+  55% { box-shadow: 0 0 34px 6px rgba(197, 238, 43, 0.7); }
+  100% { box-shadow: 0 0 22px 2px rgba(197, 238, 43, 0.4); }
+}
+
+/* Liefdesbriefie popup: the poster unfolds from the top, like a letter being opened. */
+@keyframes letter-open {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0 0); }
 }

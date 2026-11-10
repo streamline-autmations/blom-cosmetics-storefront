@@ -7,11 +7,8 @@ import { CartButton } from '../cart/CartButton';
 import { WishlistButton } from '../wishlist/WishlistButton';
 import { AnnouncementSignup } from './AnnouncementSignup';
 import { AnnouncementBar } from './AnnouncementBar';
-import { BackInStockPopup } from './BackInStockPopup';
-import { WomensDayPopup } from './WomensDayPopup';
-import { CatEyeSpecialsPopup } from './CatEyeSpecialsPopup';
-import { StarterPackPopup } from './StarterPackPopup';
-import { HemelBlouGlowPopup } from './HemelBlouGlowPopup';
+import { GrinchChristmasPopup } from './GrinchChristmasPopup';
+import { LiefdesbriefiePopup } from './LiefdesbriefiePopup';
 
 interface HeaderProps {
   showMobileMenu?: boolean;
@@ -113,13 +110,9 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
     <>
       <AnnouncementBar />
       <AnnouncementSignup />
-      {/* Nude Cat Eye launch is the current live promo; it claims the visit ahead of the seasonal/restock popups. */}
-      {/* HemelBlou Glow launch is mounted first so it claims the visit ahead of Starter Pack. */}
-      <HemelBlouGlowPopup />
-      <StarterPackPopup />
-      <CatEyeSpecialsPopup />
-      <WomensDayPopup />
-      <BackInStockPopup />
+      {/* Launch popups: one per visit, first mounted wins. Grinch takes visit 1, Liefdesbriefie visit 2. */}
+      <GrinchChristmasPopup />
+      <LiefdesbriefiePopup />
 
       {/* Main Header */}
       <header className="sticky top-0 z-50 border-b border-gray-200/70 bg-white/90 backdrop-blur-xl">
