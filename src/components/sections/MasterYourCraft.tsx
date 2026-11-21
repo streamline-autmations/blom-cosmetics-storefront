@@ -31,7 +31,7 @@ const courses = [
     meta: '8 Feb 2027',
     location: 'Randfontein',
     href: '/courses/peekaboo-nail-art-workshop',
-    image: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1400,c_limit/v1795245474/courses/peekaboo-nail-art-workshop/banner_sis7gj.jpg',
+    image: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1400,c_limit/v1795250218/courses/peekaboo-nail-art-workshop/banner2_h0amwx.jpg',
     className: 'academy-course--wide',
   },
 ];

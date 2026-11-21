@@ -33,7 +33,7 @@ const CoursesPage: React.FC = () => {
       slug: 'peekaboo-nail-art-workshop',
       title: '3D Animal Peekaboo Nail Art Workshop',
       description: 'Learn 5 adorable 3D peekaboo animal designs with Avané in a hands-on one-day workshop at Blom HQ. Kit, tea and coffee, and certificate included.',
-      image: 'https://res.cloudinary.com/hmvetruz/image/upload/c_crop,x_40,y_440,w_760,h_570/c_scale,w_800/f_auto,q_auto/v1795245438/courses/peekaboo-nail-art-workshop/flyer_q4rxiq.jpg',
+      image: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1000,c_limit/v1795250208/courses/peekaboo-nail-art-workshop/wide_bfidgg.png',
       duration: '8 February 2027 · 09:00–15:00',
       location: 'Randfontein',
       priceLabel: 'R1,800'

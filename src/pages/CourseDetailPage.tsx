@@ -642,9 +642,9 @@ export const CourseDetailPage: React.FC = () => {
       sku: 'SKU_PEEKABOO_NAIL_ART_WORKSHOP',
       title: '3D Animal Peekaboo Nail Art Workshop',
       description: 'Learn 5 adorable 3D peekaboo animal designs in a hands-on, one-day workshop at Blom Cosmetics Headquarters in Randfontein. Kit included.',
-      // Nails-only crops of the flyer, so the flyer's own lettering doesn't clash with the page title.
-      heroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/c_crop,x_40,y_440,w_760,h_380/f_auto,q_auto/v1795245438/courses/peekaboo-nail-art-workshop/flyer_q4rxiq.jpg',
-      mobileHeroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/c_crop,x_40,y_440,w_400,h_420/f_auto,q_auto/v1795245438/courses/peekaboo-nail-art-workshop/flyer_q4rxiq.jpg',
+      // AI-generated cover shots of Avané's five peekaboo designs (wide master + mobile portrait).
+      heroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1920,c_limit/v1795250208/courses/peekaboo-nail-art-workshop/wide_bfidgg.png',
+      mobileHeroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_900,c_limit/v1795250215/courses/peekaboo-nail-art-workshop/mobile_ycymij.png',
       heroBgColor: '#EEE8F6',
       duration: '1 Day Workshop',
       price: 'R1,800',
