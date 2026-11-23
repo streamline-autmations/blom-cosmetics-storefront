@@ -275,10 +275,7 @@ export const CourseDetailPage: React.FC = () => {
           ]
         }
       ],
-      studentDiscount: [
-        'We have a shop inside the training studio',
-        '10% discount on all product purchases during your training'
-      ],
+      studentDiscount: [],
       accordionData: [
         {
           title: 'DAY 1: FOUNDATION & PREPARATION',
@@ -506,10 +503,7 @@ export const CourseDetailPage: React.FC = () => {
           ]
         }
       ],
-      studentDiscount: [
-        'We have a shop inside the training studio',
-        '10% discount on all product purchases during your training'
-      ],
+      studentDiscount: [],
       accordionData: [
         {
           title: 'FOUNDATION: HEALTH, SAFETY & NAIL SCIENCE',
@@ -641,6 +635,99 @@ export const CourseDetailPage: React.FC = () => {
             'Practical, hands-on training',
             'Expert guidance throughout the day',
             'Turning your nail art into opportunity'
+          ]
+        }
+      ]
+    },
+    'peekaboo-nail-art-workshop': {
+      id: 'e61a9717-1a52-4011-a8a3-a40cdaadb1e3', // Matches Store `courses` row
+      sku: 'SKU_PEEKABOO_NAIL_ART_WORKSHOP',
+      title: '3D Animal Peekaboo Nail Art Workshop',
+      description: 'Learn 5 adorable 3D peekaboo animal designs in a hands-on, one-day workshop at Blom Cosmetics Headquarters in Randfontein. Kit included.',
+      // AI-generated cover shots of Avané's five peekaboo designs (wide master + mobile portrait).
+      heroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1920,c_limit/v1795250208/courses/peekaboo-nail-art-workshop/wide_bfidgg.png',
+      mobileHeroImage: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_900,c_limit/v1795250215/courses/peekaboo-nail-art-workshop/mobile_ycymij.png',
+      heroBgColor: '#EEE8F6',
+      duration: '1 Day Workshop',
+      price: 'R1,800',
+      numericPrice: 1800,
+      // No deposit: the workshop is paid in full to secure a spot.
+      depositAmount: 0,
+      isOnline: false,
+      location: '34 Horingbek Avenue, Helikonpark, Randfontein, Gauteng',
+      instructor: {
+        name: 'Avané Crous',
+        image: '/avane-crous-headshot.webp',
+        bio: 'Professional nail artist and educator with over 8 years of experience. Avané loves detailed nail art and helping students build the confidence to take their work to the next level.'
+      },
+      instructors: [
+        {
+          name: 'Avané Crous',
+          image: '/avane-crous-headshot.webp',
+          bio: 'Professional nail artist and educator with over 8 years of experience. Avané loves detailed nail art and helping students build the confidence to take their work to the next level.',
+          location: '34 Horingbek Avenue, Helikonpark, Randfontein, Gauteng',
+          email: 'shopblomcosmetics@gmail.com',
+          phone: '+27 79 548 3317',
+          availableDates: [
+            'Monday, 8 February 2027'
+          ],
+          trainingSchedule: [
+            {
+              title: 'Monday, 8 February 2027',
+              items: [
+                'Workshop runs from 09:00 to 15:00'
+              ]
+            }
+          ]
+        }
+      ],
+      about: [
+        'Bring the cutest little animals to life on your nails. This hands-on workshop teaches you 5 different 3D peekaboo animal designs, with the dimension, character and personality that make clients stop and stare.',
+        'Avané guides you step by step through every detail at Blom Cosmetics Headquarters. Whether you want to grow your nail art skills or offer your clients something unique, you leave with professional-looking 3D designs and the confidence to sell them.'
+      ],
+      packages: [
+        {
+          name: 'Workshop',
+          price: 'R1,800',
+          kitValue: 'Included',
+          features: [
+            'Your own nail art kit to use during the workshop',
+            '5 different 3D peekaboo animal designs',
+            'Hands-on training and guidance from Avané Crous',
+            'Tea and coffee throughout the day',
+            'Blom Cosmetics Workshop Certificate on completion'
+          ]
+        }
+      ],
+      availableDates: [
+        'Monday, 8 February 2027'
+      ],
+      thingsToBring: [],
+      trainingSchedule: [],
+      studentDiscount: [],
+      accordionData: [
+        {
+          title: '3D PEEKABOO ANIMALS',
+          content: [
+            '5 different 3D peekaboo animal designs',
+            'Step-by-step guidance on adorable 3D animal details',
+            'Giving every animal character and personality'
+          ]
+        },
+        {
+          title: 'DIMENSION & FINISH',
+          content: [
+            'Techniques for beautiful dimension',
+            'Tips and tricks for professional-looking 3D designs',
+            'Finishing touches clients notice'
+          ]
+        },
+        {
+          title: "WHAT'S INCLUDED",
+          content: [
+            'Your own nail art kit to use during the workshop',
+            'Tea and coffee to keep you refreshed',
+            'A Blom Cosmetics Workshop Certificate on completion'
           ]
         }
       ]

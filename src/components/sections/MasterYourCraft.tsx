@@ -27,11 +27,11 @@ const courses = [
     className: 'academy-course--compact',
   },
   {
-    title: 'Customized Shaping Workshop',
-    meta: '29 Sep 2026',
+    title: '3D Animal Peekaboo Nail Art',
+    meta: '8 Feb 2027',
     location: 'Randfontein',
-    href: '/courses/customized-shaping-workshop',
-    image: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1400,c_limit/v1789561409/courses/customized-shaping-workshop/banner_final_yqfm2v.png',
+    href: '/courses/peekaboo-nail-art-workshop',
+    image: 'https://res.cloudinary.com/hmvetruz/image/upload/f_auto,q_auto,w_1400,c_limit/v1795250218/courses/peekaboo-nail-art-workshop/banner2_h0amwx.jpg',
     className: 'academy-course--wide',
   },
 ];
