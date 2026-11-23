@@ -189,3 +189,7 @@ I developed and maintain this platform for the client as a working production sy
 - unit tests for the shared pricing logic
 
 AI coding assistants were used as development tools during parts of this project. Design decisions, integration work, debugging against live services, and responsibility for the production system are mine.
+
+---
+
+Designed & built by [Streamline Automations](https://streamline-automations.co.za/).
