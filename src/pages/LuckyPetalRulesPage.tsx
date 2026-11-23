@@ -63,11 +63,12 @@ export const LuckyPetalRulesPage: React.FC = () => {
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-gray-900">4. One spin per account</h2>
+                <h2 className="text-xl font-semibold text-gray-900">4. One spin per person</h2>
                 <p>
-                  Each account gets one spin for the whole campaign. The prize is chosen by our server at random using the
-                  odds below, saved to your account, and shown on the wheel. Creating extra accounts to spin again is not
-                  allowed, and prizes won that way may be cancelled.
+                  Each person gets one spin for the whole campaign: one per account, one per device and one per email
+                  address (email variations such as name+1@gmail.com count as the same address). The prize is chosen by
+                  our server at random using the odds below, saved to your account, and shown on the wheel. Creating extra
+                  accounts to spin again is not allowed, and prizes won that way may be cancelled.
                 </p>
               </section>
 

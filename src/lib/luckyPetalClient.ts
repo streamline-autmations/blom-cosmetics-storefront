@@ -8,6 +8,7 @@ declare global {
   interface Window {
     /** Set while the Lucky Petal campaign is running so other promo popups stand down. */
     __blomLuckyPetalClaimed?: boolean;
+    __blomLuckyPetalDevice?: string;
   }
 }
 
@@ -47,11 +48,31 @@ const listeners = new Set<(state: LuckyPetalState) => void>();
 let inflight: Promise<LuckyPetalState> | null = null;
 let inflightAt = 0;
 
+const DEVICE_KEY = 'blom_lucky_petal_device';
+
 /**
- * Demo mode is only for test links (Netlify deploy previews) and local development.
+ * A random id for this browser, so one phone or laptop cannot spin for several accounts.
+ * shortcut: private browsing or clearing site data gives a new id; the server's
+ * one-spin-per-account and per-email rules still apply.
+ */
+export const luckyPetalDeviceId = (): string => {
+  try {
+    const saved = localStorage.getItem(DEVICE_KEY);
+    if (saved && saved.length >= 16) return saved;
+    const fresh = crypto.randomUUID();
+    localStorage.setItem(DEVICE_KEY, fresh);
+    return fresh;
+  } catch {
+    // Storage blocked: a per-page id still lets the server check this spin.
+    return (window.__blomLuckyPetalDevice ??= crypto.randomUUID());
+  }
+};
+
+/**
+ * Test mode is only for test links (Netlify deploy previews) and local development.
  * On the real site it is ignored even if it is left switched on in the database.
  */
-export const luckyPetalDemoAllowedHere = (): boolean => {
+export const luckyPetalTestAllowedHere = (): boolean => {
   if (typeof window === 'undefined') return false;
   const host = window.location.hostname;
   return /^deploy-preview-\d+--/.test(host) || host === 'localhost' || host === '127.0.0.1';
@@ -59,13 +80,16 @@ export const luckyPetalDemoAllowedHere = (): boolean => {
 
 async function loadState(): Promise<LuckyPetalState> {
   if (!supabaseConfigured) return { visible: false };
-  const { data, error } = await supabase.rpc('lucky_petal_state', { p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID });
+  const { data, error } = await supabase.rpc('lucky_petal_state', {
+    p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID,
+    p_device_id: luckyPetalDeviceId(),
+  });
   if (error || !data) {
     // Function missing (migration not applied) or offline: the campaign simply doesn't show.
     return { visible: false };
   }
   const state = data as LuckyPetalState;
-  if (state.visible && state.mode === 'demo' && !luckyPetalDemoAllowedHere()) return { visible: false };
+  if (state.visible && state.mode === 'test' && !luckyPetalTestAllowedHere()) return { visible: false };
   return state;
 }
 
@@ -92,7 +116,10 @@ export type SpinResult =
   | { ok: false; error: string };
 
 const SPIN_ERRORS: Record<string, string> = {
-  login_required: 'Log in to your BLOM account to spin.',
+  login_required: 'Sign up or log in before you can spin.',
+  device_used: 'This device has already been used for a Lucky Petal spin. It is one spin per person.',
+  email_used: 'This email address has already had its Lucky Petal spin. It is one spin per person.',
+  device_required: 'Please allow this site to save data in your browser, then try again.',
   verify_email: 'Please confirm your email address first, then come back to spin.',
   closed: 'The Lucky Petal wheel is closed right now.',
   not_started: 'The wheel opens on Black Friday. See you then!',
@@ -101,7 +128,10 @@ const SPIN_ERRORS: Record<string, string> = {
 };
 
 export async function spinLuckyPetal(): Promise<SpinResult> {
-  const { data, error } = await supabase.rpc('lucky_petal_spin', { p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID });
+  const { data, error } = await supabase.rpc('lucky_petal_spin', {
+    p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID,
+    p_device_id: luckyPetalDeviceId(),
+  });
   if (error || !data) {
     return { ok: false, error: 'Something went wrong. Please try again in a moment.' };
   }

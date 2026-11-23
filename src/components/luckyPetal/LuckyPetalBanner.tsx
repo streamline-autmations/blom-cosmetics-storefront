@@ -57,8 +57,8 @@ export const LuckyPetalBanner: React.FC = () => {
           <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#FF8DB5]">
             {state.mode === 'preview'
               ? 'Preview · only you can see this'
-              : state.mode === 'demo'
-                ? 'Test link · demo spin'
+              : state.mode === 'test'
+                ? 'Test link · not the live site'
                 : 'Black Friday · One day only'}
           </p>
           <h2 id="lucky-petal-banner-title" className="mt-4 font-serif text-[2.2rem] leading-[1.04] text-white sm:text-[2.8rem]">
