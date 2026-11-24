@@ -135,7 +135,6 @@ export function isLuckyPetalDiscountable(product: {
     return Number.isFinite(c) && c > 0 && Number.isFinite(p) && c > p;
   };
   return !(
-    onSale(product.compare_at_price_cents, product.price_cents, 1) ||
     onSale(product.compare_at_price, product.price, 100) ||
     onSale(product.compare_at_price_cents, cents(product.price, product.price_cents), 1)
   );

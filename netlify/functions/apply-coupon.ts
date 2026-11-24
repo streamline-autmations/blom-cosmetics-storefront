@@ -22,6 +22,28 @@ const cartKey = (item: CartInput) => {
   return raw.startsWith('bundle-') ? raw.slice('bundle-'.length) : raw
 }
 const norm = (value: unknown) => String(value || '').toLowerCase().trim()
+const numberOrNull = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+// Mirrors create-order's getCanonicalPriceCents (incl. ignoring "Default Title"), so preview == charge.
+const canonicalPriceCents = (product: any, variantTitle: unknown): number => {
+  const name = norm(variantTitle)
+  const variant = name && !['default title', 'default'].includes(name) && Array.isArray(product?.variants)
+    ? product.variants.find((v: any) => [v?.id, v?.name, v?.label, v?.title].some((value) => norm(value) === name))
+    : null
+  if (variant) {
+    const vc = numberOrNull(variant.price_cents)
+    if (vc !== null) return Math.max(0, Math.round(vc))
+    const vp = numberOrNull(variant.price)
+    if (vp !== null) return Math.max(0, Math.round(vp * 100))
+  }
+  const price = numberOrNull(product?.price)
+  if (price !== null && price > 0) return Math.max(0, Math.round(price * 100))
+  const priceCents = numberOrNull(product?.price_cents)
+  return priceCents !== null ? Math.max(0, Math.round(priceCents)) : 0
+}
 
 export const handler: Handler = async (event) => {
   const headers = {
@@ -85,19 +107,10 @@ export const handler: Handler = async (event) => {
       const productId = cartKey(item)
       const product: any = catalogByKey.get(norm(productId))
       const quantity = Math.max(1, Math.floor(Number(item.quantity || 1)))
-      // Price the chosen variant the way create-order does, so the preview matches the charge.
-      const variantName = norm(item.variant?.title)
-      const variant = variantName && Array.isArray(product?.variants)
-        ? product.variants.find((v: any) => [v?.id, v?.name, v?.label, v?.title].some((value) => norm(value) === variantName))
-        : null
-      const variantCents = Number(variant?.price_cents ?? (variant?.price != null ? Number(variant.price) * 100 : NaN))
-      const unitPriceCents = Number.isFinite(variantCents) && variantCents >= 0
-        ? Math.round(variantCents)
-        : product
-          ? Math.round(Number(product.price ?? Number(product.price_cents || 0) / 100) * 100)
-          : 0
+      const unitPriceCents = product ? canonicalPriceCents(product, item.variant?.title) : 0
       return {
-        product_id: productId,
+        // The resolved uuid, as create-order sends, so per-product coupon rules match.
+        product_id: product?.id ? String(product.id) : productId,
         name: product?.name || '',
         slug: product?.slug || '',
         quantity,

@@ -148,6 +148,8 @@ test('money-off prizes skip bundles, combos, collections and sale items', () => 
   assert.equal(isLuckyPetalDiscountable({ category: 'gel-system', product_type: 'bundle', price: 200 }), false);
   // A stale cents column cannot hide a sale the rand columns show.
   assert.equal(isLuckyPetalDiscountable({ price: 200, price_cents: 20000, compare_at_price: 250, compare_at_price_cents: 20000 }), false);
+  // A zero cents column falls back to the rand price instead of looking "on sale".
+  assert.equal(isLuckyPetalDiscountable({ price: 200, price_cents: 0, compare_at_price: 200, compare_at_price_cents: 20000 }), true);
 
   const tenOff: LuckyPetalPrizeSnapshot = {
     kind: 'percent', title: '10% off', line1: '10%', line2: 'OFF', tone: 'white', sort_order: 1,
