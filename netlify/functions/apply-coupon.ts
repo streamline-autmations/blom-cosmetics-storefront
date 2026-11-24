@@ -12,7 +12,16 @@ type CartInput = {
   product_id?: string
   id?: string
   quantity?: number
+  variant?: { title?: string | null } | null
 }
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Same cart-id rules as create-order: bundles carry a `bundle-<uuid>` id, some paths store a slug.
+const cartKey = (item: CartInput) => {
+  const raw = String(item.product_id || item.id || '').trim()
+  return raw.startsWith('bundle-') ? raw.slice('bundle-'.length) : raw
+}
+const norm = (value: unknown) => String(value || '').toLowerCase().trim()
 
 export const handler: Handler = async (event) => {
   const headers = {
@@ -50,27 +59,43 @@ export const handler: Handler = async (event) => {
     })
 
     const rawCart = Array.isArray(cart) ? cart : []
-    const requestedIds = [...new Set(rawCart
-      .map((item) => String(item.product_id || item.id || '').trim())
-      .filter(Boolean))]
+    const requestedKeys = [...new Set(rawCart.map(cartKey).filter(Boolean))]
+    const requestedIds = requestedKeys.filter((key) => UUID_PATTERN.test(key))
+    const requestedSlugs = requestedKeys.filter((key) => !UUID_PATTERN.test(key))
+    const productColumns =
+      'id,name,slug,price,price_cents,compare_at_price,compare_at_price_cents,product_type,category,variants,status,is_active,out_of_stock'
 
-    const { data: catalogProducts, error: catalogError } = requestedIds.length
-      ? await supabase
-          .from('products')
-          .select('id,name,slug,price,price_cents,compare_at_price,compare_at_price_cents,category,status,is_active,out_of_stock')
-          .in('id', requestedIds)
-      : { data: [], error: null }
+    const [byId, bySlug] = await Promise.all([
+      requestedIds.length
+        ? supabase.from('products').select(productColumns).in('id', requestedIds)
+        : Promise.resolve({ data: [], error: null }),
+      requestedSlugs.length
+        ? supabase.from('products').select(productColumns).in('slug', requestedSlugs)
+        : Promise.resolve({ data: [], error: null })
+    ])
+    if (byId.error) throw byId.error
+    if (bySlug.error) throw bySlug.error
 
-    if (catalogError) throw catalogError
-
-    const catalogById = new Map((catalogProducts || []).map((product: any) => [String(product.id), product]))
+    const catalogByKey = new Map<string, any>()
+    for (const product of [...(byId.data || []), ...(bySlug.data || [])] as any[]) {
+      catalogByKey.set(norm(product.id), product)
+      if (product.slug) catalogByKey.set(norm(product.slug), product)
+    }
     const canonicalCart = rawCart.map((item) => {
-      const productId = String(item.product_id || item.id || '')
-      const product: any = catalogById.get(productId)
+      const productId = cartKey(item)
+      const product: any = catalogByKey.get(norm(productId))
       const quantity = Math.max(1, Math.floor(Number(item.quantity || 1)))
-      const unitPriceCents = product
-        ? Math.round(Number(product.price ?? Number(product.price_cents || 0) / 100) * 100)
-        : 0
+      // Price the chosen variant the way create-order does, so the preview matches the charge.
+      const variantName = norm(item.variant?.title)
+      const variant = variantName && Array.isArray(product?.variants)
+        ? product.variants.find((v: any) => [v?.id, v?.name, v?.label, v?.title].some((value) => norm(value) === variantName))
+        : null
+      const variantCents = Number(variant?.price_cents ?? (variant?.price != null ? Number(variant.price) * 100 : NaN))
+      const unitPriceCents = Number.isFinite(variantCents) && variantCents >= 0
+        ? Math.round(variantCents)
+        : product
+          ? Math.round(Number(product.price ?? Number(product.price_cents || 0) / 100) * 100)
+          : 0
       return {
         product_id: productId,
         name: product?.name || '',

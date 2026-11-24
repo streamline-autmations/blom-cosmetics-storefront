@@ -119,6 +119,7 @@ const cents = (rands: unknown, centsValue: unknown): number => {
 export function isLuckyPetalDiscountable(product: {
   is_bundle?: boolean | null;
   category?: string | null;
+  product_type?: string | null;
   price?: unknown;
   price_cents?: unknown;
   compare_at_price?: unknown;
@@ -126,8 +127,18 @@ export function isLuckyPetalDiscountable(product: {
 } | null | undefined): boolean {
   if (!product || product.is_bundle) return false;
   if (String(product.category || '').toLowerCase() === 'bundle-deals') return false;
-  const compareAt = cents(product.compare_at_price, product.compare_at_price_cents);
-  return !(compareAt > 0 && compareAt > cents(product.price, product.price_cents));
+  if (['bundle', 'collection'].includes(String(product.product_type || '').toLowerCase())) return false;
+  // Check both the cents and the rand columns: either one saying "on sale" is enough.
+  const onSale = (compare: unknown, price: unknown, scale: number) => {
+    const c = Number(compare) * scale;
+    const p = Number(price) * scale;
+    return Number.isFinite(c) && c > 0 && Number.isFinite(p) && c > p;
+  };
+  return !(
+    onSale(product.compare_at_price_cents, product.price_cents, 1) ||
+    onSale(product.compare_at_price, product.price, 100) ||
+    onSale(product.compare_at_price_cents, cents(product.price, product.price_cents), 1)
+  );
 }
 
 export const LUCKY_PETAL_FULL_PRICE_ONLY =

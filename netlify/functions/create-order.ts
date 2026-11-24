@@ -105,7 +105,7 @@ export const handler: Handler = async (event) => {
     // ProductDetailPage.tsx / ShopPage.tsx, which read `bundles` directly). They must be
     // merged in here too, otherwise every bundle-only checkout fails catalog verification.
     const [productsRes, bundlesRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,compare_at_price,compare_at_price_cents,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants,requires_custom_request`, {
+      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,compare_at_price,compare_at_price_cents,product_type,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants,requires_custom_request`, {
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
       }),
       fetch(`${SUPABASE_URL}/rest/v1/bundles?select=id,name,slug,sku,price_cents,status,is_active,stock,bundle_products`, {

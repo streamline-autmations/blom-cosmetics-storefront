@@ -563,7 +563,8 @@ export const CheckoutPage: React.FC = () => {
             product_id: item.productId || item.id,
             name: item.name,
             quantity: item.quantity,
-            unit_price_cents: Math.round(item.price * 100)
+            unit_price_cents: Math.round(item.price * 100),
+            variant: item.variant
           }))
         })
       });
@@ -737,7 +738,8 @@ export const CheckoutPage: React.FC = () => {
             product_id: item.productId || item.id,
             name: item.name,
             quantity: item.quantity,
-            unit_price_cents: Math.round(item.price * 100)
+            unit_price_cents: Math.round(item.price * 100),
+            variant: item.variant
           }))
         })
       });
