@@ -14,7 +14,7 @@ import { sanitizeShadeRequest, validateShadeRequest } from '../../src/lib/shadeR
 import { resolveAttribution } from './_lib/affiliate'
 import crypto from 'crypto'
 import { isBundleInStock } from '../../src/lib/stockAvailability'
-import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isLuckyPetalDiscountable, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
 import { attachLuckyPetalOrder, isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
 
 export const handler: Handler = async (event) => {
@@ -105,7 +105,7 @@ export const handler: Handler = async (event) => {
     // ProductDetailPage.tsx / ShopPage.tsx, which read `bundles` directly). They must be
     // merged in here too, otherwise every bundle-only checkout fails catalog verification.
     const [productsRes, bundlesRes] = await Promise.all([
-      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants,requires_custom_request`, {
+      fetch(`${SUPABASE_URL}/rest/v1/products?select=id,name,slug,sku,price,price_cents,compare_at_price,compare_at_price_cents,category,subcategory,status,is_active,out_of_stock,stock,stock_qty,stock_on_hand,inventory_quantity,variants,requires_custom_request`, {
         headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` }
       }),
       fetch(`${SUPABASE_URL}/rest/v1/bundles?select=id,name,slug,sku,price_cents,status,is_active,stock,bundle_products`, {
@@ -508,7 +508,10 @@ export const handler: Handler = async (event) => {
           return jsonError(403, 'Use your BLOM account email at checkout to claim your Lucky Petal prize.')
         }
 
-        const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents)
+        const discountableCents = validItems
+          .filter((it: any) => isLuckyPetalDiscountable(it.resolved_product))
+          .reduce((sum: number, it: any) => sum + Math.max(0, Number(it.quantity || 0)) * Math.max(0, Math.round(Number(it.unit_price || 0))), 0)
+        const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents, discountableCents)
         if (!evaluation.eligible) return jsonError(400, evaluation.message)
 
         if (evaluation.addsGift) {

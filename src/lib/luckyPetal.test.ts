@@ -5,6 +5,7 @@ import {
   evaluateLuckyPetalPrize,
   formatRand,
   isLuckyPetalCode,
+  isLuckyPetalDiscountable,
   segmentUnderPointer,
   sliceIndexForPrize,
   wheelSlices,
@@ -80,12 +81,12 @@ test('negative or missing subtotals are treated as zero', () => {
 
 test('conditions read naturally', () => {
   assert.equal(
-    describeLuckyPetalConditions(prize({ kind: 'percent', percent_off: 10, max_discount_cents: 15000, min_order_cents: 100000 })),
-    'On orders of R1,000 or more · up to R150 off · one order only',
+    describeLuckyPetalConditions(prize({ kind: 'percent', percent_off: 10, max_discount_cents: 15000, min_order_cents: 0 })),
+    'Up to R150 off · full-price products only · one order only',
   );
   assert.equal(
-    describeLuckyPetalConditions(prize({ kind: 'gift', min_order_cents: 50000 })),
-    'On orders of R500 or more · one order only',
+    describeLuckyPetalConditions(prize({ kind: 'gift', min_order_cents: 0 })),
+    'One order only',
   );
 });
 
@@ -135,4 +136,28 @@ test('small prize lists show each prize twice and land on one of its copies', ()
     assert.equal(slices[segmentUnderPointer(target, slices.length)].id, 'd');
   }
   assert.equal(wheelSlices(['a', 'b', 'c', 'd', 'e', 'f'].map(seg)).length, 6);
+});
+
+test('money-off prizes skip bundles, combos, collections and sale items', () => {
+  assert.equal(isLuckyPetalDiscountable({ category: 'gel-system', price: 200, compare_at_price: null }), true);
+  assert.equal(isLuckyPetalDiscountable({ is_bundle: true, category: 'bundle-deals', price_cents: 57000 }), false);
+  assert.equal(isLuckyPetalDiscountable({ category: 'bundle-deals', price: 300 }), false);
+  assert.equal(isLuckyPetalDiscountable({ category: 'gel-system', price: 180, compare_at_price: 220 }), false);
+  assert.equal(isLuckyPetalDiscountable({ category: 'gel-system', price_cents: 18000, compare_at_price_cents: 18000 }), true);
+  assert.equal(isLuckyPetalDiscountable(undefined), false);
+
+  const tenOff: LuckyPetalPrizeSnapshot = {
+    kind: 'percent', title: '10% off', line1: '10%', line2: 'OFF', tone: 'white', sort_order: 1,
+    percent_off: 10, amount_off_cents: null, max_discount_cents: 15000, min_order_cents: 0, applies_to: 'products',
+  };
+  // R1,200 basket, only R400 of it full price: 10% of R400.
+  assert.equal(evaluateLuckyPetalPrize(tenOff, 120000, 40000).discountCents, 4000);
+  // Only bundles/sale items: not usable, with a clear reason.
+  const none = evaluateLuckyPetalPrize(tenOff, 57000, 0);
+  assert.equal(none.eligible, false);
+  assert.match(none.message, /full-price products only/);
+  // Cap still applies.
+  assert.equal(evaluateLuckyPetalPrize(tenOff, 500000, 500000).discountCents, 15000);
+  // Gifts ignore the discountable part.
+  assert.equal(evaluateLuckyPetalPrize({ ...tenOff, kind: 'gift', percent_off: null }, 57000, 0).addsGift, true);
 });

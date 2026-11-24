@@ -105,11 +105,45 @@ export type PrizeEvaluation = {
  * What a won prize is worth on a basket. `subtotalCents` is the product subtotal at
  * catalogue prices, before shipping and before any other discount.
  */
+const cents = (rands: unknown, centsValue: unknown): number => {
+  const c = Number(centsValue);
+  if (Number.isFinite(c) && c > 0) return Math.round(c);
+  const r = Number(rands);
+  return Number.isFinite(r) && r > 0 ? Math.round(r * 100) : 0;
+};
+
+/**
+ * Money-off prizes only come off full-price shop items: never bundles, combos,
+ * collections (bundles table or the bundle-deals category) or products already on sale.
+ */
+export function isLuckyPetalDiscountable(product: {
+  is_bundle?: boolean | null;
+  category?: string | null;
+  price?: unknown;
+  price_cents?: unknown;
+  compare_at_price?: unknown;
+  compare_at_price_cents?: unknown;
+} | null | undefined): boolean {
+  if (!product || product.is_bundle) return false;
+  if (String(product.category || '').toLowerCase() === 'bundle-deals') return false;
+  const compareAt = cents(product.compare_at_price, product.compare_at_price_cents);
+  return !(compareAt > 0 && compareAt > cents(product.price, product.price_cents));
+}
+
+export const LUCKY_PETAL_FULL_PRICE_ONLY =
+  'Your Lucky Petal discount works on full-price products only, not on bundles, combos, collections or items already on sale.';
+
+/**
+ * `discountableCents` is the part of the basket a money-off prize may come off
+ * (see isLuckyPetalDiscountable). Minimum spends still count the whole basket.
+ */
 export function evaluateLuckyPetalPrize(
   prize: LuckyPetalPrizeSnapshot,
   subtotalCents: number,
+  discountableCents: number = subtotalCents,
 ): PrizeEvaluation {
   const subtotal = Math.max(0, Math.round(subtotalCents || 0));
+  const discountable = Math.min(subtotal, Math.max(0, Math.round(discountableCents || 0)));
   const min = Math.max(0, Math.round(prize.min_order_cents || 0));
 
   if (prize.kind === 'course') {
@@ -142,15 +176,19 @@ export function evaluateLuckyPetalPrize(
     };
   }
 
+  if (discountable <= 0) {
+    return { eligible: false, discountCents: 0, shortfallCents: 0, addsGift: false, message: LUCKY_PETAL_FULL_PRICE_ONLY };
+  }
+
   let discount = 0;
   if (prize.kind === 'percent') {
-    discount = Math.floor((subtotal * Math.max(0, prize.percent_off || 0)) / 100);
+    discount = Math.floor((discountable * Math.max(0, prize.percent_off || 0)) / 100);
   } else if (prize.kind === 'fixed') {
     discount = Math.max(0, Math.round(prize.amount_off_cents || 0));
   }
   const cap = Math.max(0, Math.round(prize.max_discount_cents || 0));
   if (cap > 0) discount = Math.min(discount, cap);
-  discount = Math.min(discount, subtotal);
+  discount = Math.min(discount, discountable);
 
   return {
     eligible: discount > 0,
@@ -170,8 +208,10 @@ export function describeLuckyPetalConditions(prize: LuckyPetalPrizeSnapshot): st
   if (isOnlineCoursePrize(prize)) return 'On any BLOM online workshop · one course only';
   if (min > 0) parts.push(`On orders of ${formatRand(min)} or more`);
   if (prize.kind === 'percent' && cap > 0) parts.push(`up to ${formatRand(cap)} off`);
+  if (prize.kind === 'percent' || prize.kind === 'fixed') parts.push('full-price products only');
   parts.push('one order only');
-  return parts.join(' · ');
+  const text = parts.join(' · ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // ---------------------------------------------------------------- wheel geometry

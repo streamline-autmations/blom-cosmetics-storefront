@@ -104,7 +104,8 @@ export const LuckyPetalRulesPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-900">6. Using your prize</h2>
                 <ul className="list-disc space-y-1 pl-5">
                   <li>Discount and gift prizes apply to one online order, placed while logged in to the account that won them, using that account&apos;s email at checkout.</li>
-                  <li>Each prize shows its minimum order value. It is measured on product prices before delivery.</li>
+                  <li>There is no minimum spend. Gift prizes come with any online order.</li>
+                  <li>Percentage prizes come off full-price products only. They do not apply to bundles, combos, collections, items already on sale, or delivery.</li>
                   <li>Percentage prizes have a maximum discount, shown with the prize.</li>
                   <li>A gift prize is added to your order free of charge. If it sells out before you order, contact us and we will offer a similar item.</li>
                   <li>Prizes cannot be exchanged for cash, transferred, or combined with another discount code.</li>
@@ -116,7 +117,7 @@ export const LuckyPetalRulesPage: React.FC = () => {
                 <h2 className="text-xl font-semibold text-gray-900">7. The mystery gift</h2>
                 <p>
                   The mystery gift is one BLOM product chosen at random from a set of gifts when you win. It is added
-                  free to one online order of R1,000 or more. If it sells out before you order, we will offer a similar
+                  free to one online order, with no minimum spend. If it sells out before you order, we will offer a similar
                   item. It cannot be exchanged for cash or for a different product.
                 </p>
               </section>

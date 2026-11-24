@@ -6,7 +6,7 @@ import {
   TRENDY_RING_OFFER_PRODUCT_SLUGS
 } from './_lib/trendy-ring-offer'
 import { isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
-import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isLuckyPetalDiscountable, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
 
 type CartInput = {
   product_id?: string
@@ -57,7 +57,7 @@ export const handler: Handler = async (event) => {
     const { data: catalogProducts, error: catalogError } = requestedIds.length
       ? await supabase
           .from('products')
-          .select('id,name,slug,price,price_cents,status,is_active,out_of_stock')
+          .select('id,name,slug,price,price_cents,compare_at_price,compare_at_price_cents,category,status,is_active,out_of_stock')
           .in('id', requestedIds)
       : { data: [], error: null }
 
@@ -76,7 +76,9 @@ export const handler: Handler = async (event) => {
         name: product?.name || '',
         slug: product?.slug || '',
         quantity,
-        unit_price_cents: unitPriceCents
+        unit_price_cents: unitPriceCents,
+        // Bundles are not in `products`, so they are never discountable here either.
+        lucky_petal_discountable: isLuckyPetalDiscountable(product)
       }
     })
 
@@ -110,7 +112,10 @@ export const handler: Handler = async (event) => {
       }
 
       const subtotalCents = canonicalCart.reduce((sum, item) => sum + item.quantity * item.unit_price_cents, 0)
-      const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents)
+      const discountableCents = canonicalCart
+        .filter((item) => item.lucky_petal_discountable)
+        .reduce((sum, item) => sum + item.quantity * item.unit_price_cents, 0)
+      const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents, discountableCents)
       if (!evaluation.eligible) {
         return {
           statusCode: 400,
