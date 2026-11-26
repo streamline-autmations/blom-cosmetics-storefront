@@ -59,7 +59,7 @@ export const LuckyPetalBanner: React.FC = () => {
               ? 'Preview · only you can see this'
               : state.mode === 'test'
                 ? 'Test link · not the live site'
-                : 'Black Friday · One day only'}
+                : 'Black Friday · Ends Friday 23:59'}
           </p>
           <h2 id="lucky-petal-banner-title" className="mt-4 font-serif text-[2.2rem] leading-[1.04] text-white sm:text-[2.8rem]">
             {spin ? (

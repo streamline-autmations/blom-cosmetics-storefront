@@ -474,7 +474,7 @@ const ctaClass =
   'lp-cta inline-flex w-full items-center justify-center rounded-full px-6 py-3.5 text-[14px] font-bold tracking-[0.16em] text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#13060d] lg:py-4 lg:text-[15px]';
 
 const modeLabel = (mode: VisibleState['mode']) =>
-  mode === 'preview' ? 'Preview · only you can see this' : mode === 'test' ? 'Test link · not the live site' : 'Black Friday · One day only';
+  mode === 'preview' ? 'Preview · only you can see this' : mode === 'test' ? 'Test link · not the live site' : 'Black Friday · Ends Friday 23:59';
 
 const InvitationHead: React.FC<{ state: VisibleState }> = ({ state }) => (
   <>
@@ -500,7 +500,7 @@ const InvitationBody: React.FC<{
   return (
     <div>
       <p className="hidden max-w-md text-[15px] leading-6 text-white/70 lg:mt-4 lg:block">
-        One spin per person, on Black Friday only. Whatever you land on is saved to your account, ready at
+        One spin per person, until Black Friday ends at 23:59. Whatever you land on is saved to your account, ready at
         checkout.
       </p>
 
