@@ -5,11 +5,44 @@ import {
   TRENDY_RING_OFFER_PRICE_CENTS,
   TRENDY_RING_OFFER_PRODUCT_SLUGS
 } from './_lib/trendy-ring-offer'
+import { isLuckyPetalFailure, loadLuckyPetalRedemption } from './_lib/lucky-petal'
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isLuckyPetalDiscountable, isOnlineCoursePrize } from '../../src/lib/luckyPetal'
 
 type CartInput = {
   product_id?: string
   id?: string
   quantity?: number
+  variant?: { title?: string | null } | null
+}
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+// Same cart-id rules as create-order: bundles carry a `bundle-<uuid>` id, some paths store a slug.
+const cartKey = (item: CartInput) => {
+  const raw = String(item.product_id || item.id || '').trim()
+  return raw.startsWith('bundle-') ? raw.slice('bundle-'.length) : raw
+}
+const norm = (value: unknown) => String(value || '').toLowerCase().trim()
+const numberOrNull = (value: unknown): number | null => {
+  if (value === null || value === undefined || value === '') return null
+  const n = Number(value)
+  return Number.isFinite(n) ? n : null
+}
+// Mirrors create-order's getCanonicalPriceCents (incl. ignoring "Default Title"), so preview == charge.
+const canonicalPriceCents = (product: any, variantTitle: unknown): number => {
+  const name = norm(variantTitle)
+  const variant = name && !['default title', 'default'].includes(name) && Array.isArray(product?.variants)
+    ? product.variants.find((v: any) => [v?.id, v?.name, v?.label, v?.title].some((value) => norm(value) === name))
+    : null
+  if (variant) {
+    const vc = numberOrNull(variant.price_cents)
+    if (vc !== null) return Math.max(0, Math.round(vc))
+    const vp = numberOrNull(variant.price)
+    if (vp !== null) return Math.max(0, Math.round(vp * 100))
+  }
+  const price = numberOrNull(product?.price)
+  if (price !== null && price > 0) return Math.max(0, Math.round(price * 100))
+  const priceCents = numberOrNull(product?.price_cents)
+  return priceCents !== null ? Math.max(0, Math.round(priceCents)) : 0
 }
 
 export const handler: Handler = async (event) => {
@@ -48,35 +81,133 @@ export const handler: Handler = async (event) => {
     })
 
     const rawCart = Array.isArray(cart) ? cart : []
-    const requestedIds = [...new Set(rawCart
-      .map((item) => String(item.product_id || item.id || '').trim())
-      .filter(Boolean))]
+    const requestedKeys = [...new Set(rawCart.map(cartKey).filter(Boolean))]
+    const requestedIds = requestedKeys.filter((key) => UUID_PATTERN.test(key))
+    const requestedSlugs = requestedKeys.filter((key) => !UUID_PATTERN.test(key))
+    const productColumns =
+      'id,name,slug,price,price_cents,compare_at_price,compare_at_price_cents,product_type,category,variants,status,is_active,out_of_stock'
 
-    const { data: catalogProducts, error: catalogError } = requestedIds.length
-      ? await supabase
-          .from('products')
-          .select('id,name,slug,price,price_cents,status,is_active,out_of_stock')
-          .in('id', requestedIds)
-      : { data: [], error: null }
+    const [byId, bySlug] = await Promise.all([
+      requestedIds.length
+        ? supabase.from('products').select(productColumns).in('id', requestedIds)
+        : Promise.resolve({ data: [], error: null }),
+      requestedSlugs.length
+        ? supabase.from('products').select(productColumns).in('slug', requestedSlugs)
+        : Promise.resolve({ data: [], error: null })
+    ])
+    if (byId.error) throw byId.error
+    if (bySlug.error) throw bySlug.error
 
-    if (catalogError) throw catalogError
-
-    const catalogById = new Map((catalogProducts || []).map((product: any) => [String(product.id), product]))
+    const catalogByKey = new Map<string, any>()
+    for (const product of [...(byId.data || []), ...(bySlug.data || [])] as any[]) {
+      catalogByKey.set(norm(product.id), product)
+      if (product.slug) catalogByKey.set(norm(product.slug), product)
+    }
     const canonicalCart = rawCart.map((item) => {
-      const productId = String(item.product_id || item.id || '')
-      const product: any = catalogById.get(productId)
+      const productId = cartKey(item)
+      const product: any = catalogByKey.get(norm(productId))
       const quantity = Math.max(1, Math.floor(Number(item.quantity || 1)))
-      const unitPriceCents = product
-        ? Math.round(Number(product.price ?? Number(product.price_cents || 0) / 100) * 100)
-        : 0
+      const unitPriceCents = product ? canonicalPriceCents(product, item.variant?.title) : 0
       return {
-        product_id: productId,
+        // The resolved uuid, as create-order sends, so per-product coupon rules match.
+        product_id: product?.id ? String(product.id) : productId,
         name: product?.name || '',
         slug: product?.slug || '',
         quantity,
-        unit_price_cents: unitPriceCents
+        unit_price_cents: unitPriceCents,
+        // Bundles are not in `products`, so they are never discountable here either.
+        lucky_petal_discountable: isLuckyPetalDiscountable(product)
       }
     })
+
+    // BLOM Lucky Petal prize codes are bound to the account that spun them.
+    if (isLuckyPetalCode(normalizedCode)) {
+      const redemption = await loadLuckyPetalRedemption({
+        code: normalizedCode,
+        authHeader: event.headers.authorization || event.headers.Authorization,
+        supabaseUrl,
+        serviceKey
+      })
+      if (isLuckyPetalFailure(redemption)) {
+        return {
+          statusCode: redemption.status,
+          headers,
+          body: JSON.stringify({ ok: false, valid: false, error: redemption.error })
+        }
+      }
+
+      if (isOnlineCoursePrize(redemption.prize)) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            ok: false,
+            valid: false,
+            error: 'Your Lucky Petal prize is for BLOM online workshops. Use it when you buy a course.',
+            offer_type: 'lucky_petal'
+          })
+        }
+      }
+
+      const subtotalCents = canonicalCart.reduce((sum, item) => sum + item.quantity * item.unit_price_cents, 0)
+      const discountableCents = canonicalCart
+        .filter((item) => item.lucky_petal_discountable)
+        .reduce((sum, item) => sum + item.quantity * item.unit_price_cents, 0)
+      const evaluation = evaluateLuckyPetalPrize(redemption.prize, subtotalCents, discountableCents)
+      if (!evaluation.eligible) {
+        return {
+          statusCode: 400,
+          headers,
+          body: JSON.stringify({
+            ok: false,
+            valid: false,
+            error: evaluation.message,
+            shortfall_cents: evaluation.shortfallCents,
+            offer_type: 'lucky_petal'
+          })
+        }
+      }
+
+      let gift: { id: string; name: string; image_url: string | null } | null = null
+      if (evaluation.addsGift) {
+        const { data: giftProduct } = await supabase
+          .from('products')
+          .select('id,name,image_url')
+          .eq('id', redemption.giftProductId)
+          .maybeSingle()
+        if (!giftProduct) {
+          return {
+            statusCode: 409,
+            headers,
+            body: JSON.stringify({ ok: false, valid: false, error: 'Your Lucky Petal gift could not be found. Please contact us.' })
+          }
+        }
+        gift = {
+          id: String(giftProduct.id),
+          name: String(giftProduct.name),
+          image_url: giftProduct.image_url ? String(giftProduct.image_url) : null
+        }
+      }
+
+      const prize = redemption.prize
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          ok: true,
+          valid: true,
+          code: normalizedCode,
+          discount_cents: evaluation.discountCents,
+          discount_type: prize.kind === 'percent' ? 'percent' : 'fixed',
+          discount_value: prize.kind === 'percent' ? prize.percent_off : evaluation.discountCents / 100,
+          max_discount_cents: prize.max_discount_cents || 0,
+          min_order_cents: prize.min_order_cents || 0,
+          message: evaluation.message,
+          offer_type: 'lucky_petal',
+          lucky_petal: { title: prize.title, kind: prize.kind, gift }
+        })
+      }
+    }
 
     const { data: benefit } = await supabase
       .from('course_benefits')

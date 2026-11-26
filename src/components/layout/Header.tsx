@@ -9,6 +9,7 @@ import { AnnouncementSignup } from './AnnouncementSignup';
 import { AnnouncementBar } from './AnnouncementBar';
 import { GrinchChristmasPopup } from './GrinchChristmasPopup';
 import { LiefdesbriefiePopup } from './LiefdesbriefiePopup';
+import { LuckyPetalHost } from '../luckyPetal/LuckyPetalModal';
 
 interface HeaderProps {
   showMobileMenu?: boolean;
@@ -110,6 +111,8 @@ export const Header: React.FC<HeaderProps> = ({ showMobileMenu = false }) => {
     <>
       <AnnouncementBar />
       <AnnouncementSignup />
+      {/* Black Friday Lucky Petal wheel. While its campaign runs, the promo popups below stand down. */}
+      <LuckyPetalHost />
       {/* Launch popups: one per visit, first mounted wins. Grinch takes visit 1, Liefdesbriefie visit 2. */}
       <GrinchChristmasPopup />
       <LiefdesbriefiePopup />

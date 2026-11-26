@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { LuckyPetalCheckoutNudge } from '../components/luckyPetal/LuckyPetalCheckoutNudge';
+import { evaluateLuckyPetalPrize, isLuckyPetalCode, isOnlineCoursePrize } from '../lib/luckyPetal';
+import { useLuckyPetalState } from '../lib/luckyPetalClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
@@ -126,6 +129,14 @@ export const CheckoutPage: React.FC = () => {
   const [couponError, setCouponError] = useState('');
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponDetails, setCouponDetails] = useState<any>(null);
+
+  // Black Friday Lucky Petal: the customer's won prize, applied for them once the basket qualifies.
+  const { state: luckyPetalState } = useLuckyPetalState();
+  const luckyPetalSpin = luckyPetalState.visible ? luckyPetalState.my_spin : null;
+  const [luckyPetalOptOut, setLuckyPetalOptOut] = useState(false);
+  const luckyPetalTriedRef = useRef<string | null>(null);
+  const isLuckyPetalApplied = Boolean(appliedCoupon && couponDetails?.offer_type === 'lucky_petal');
+  const luckyPetalGiftName: string | null = isLuckyPetalApplied ? couponDetails?.lucky_petal?.gift?.name || null : null;
 
   // Validation errors
   const [validationErrors, setValidationErrors] = useState<{
@@ -552,7 +563,8 @@ export const CheckoutPage: React.FC = () => {
             product_id: item.productId || item.id,
             name: item.name,
             quantity: item.quantity,
-            unit_price_cents: Math.round(item.price * 100)
+            unit_price_cents: Math.round(item.price * 100),
+            variant: item.variant
           }))
         })
       });
@@ -726,7 +738,8 @@ export const CheckoutPage: React.FC = () => {
             product_id: item.productId || item.id,
             name: item.name,
             quantity: item.quantity,
-            unit_price_cents: Math.round(item.price * 100)
+            unit_price_cents: Math.round(item.price * 100),
+            variant: item.variant
           }))
         })
       });
@@ -734,6 +747,8 @@ export const CheckoutPage: React.FC = () => {
       const result = await response.json().catch(() => ({}));
       if (!response.ok || (!result.valid && !result.ok)) {
         handleRemoveCoupon();
+        // A Lucky Petal prize that dropped below its minimum: the Lucky Petal card shows the progress.
+        if (result.offer_type === 'lucky_petal' && result.shortfall_cents) return;
         setCouponError(result.error || result.message || 'Coupon no longer valid');
         return;
       }
@@ -747,6 +762,19 @@ export const CheckoutPage: React.FC = () => {
       setCouponError('Unable to verify this discount. Please apply it again.');
     }
   };
+
+  useEffect(() => {
+    if (!luckyPetalSpin || luckyPetalSpin.status !== 'awarded' || luckyPetalSpin.prize.kind === 'course') return;
+    if (isOnlineCoursePrize(luckyPetalSpin.prize)) return;
+    if (luckyPetalOptOut || appliedCoupon || isApplyingCoupon || !shippingInfo.email || cartState.items.length === 0) return;
+    const subtotalCents = Math.round(cartState.subtotal * 100);
+    if (!evaluateLuckyPetalPrize(luckyPetalSpin.prize, subtotalCents).eligible) return;
+    // Try once per basket total, so a failure can't loop.
+    const attempt = `${luckyPetalSpin.code}:${subtotalCents}`;
+    if (luckyPetalTriedRef.current === attempt) return;
+    luckyPetalTriedRef.current = attempt;
+    void handleApplyCoupon(luckyPetalSpin.code);
+  }, [luckyPetalSpin?.code, luckyPetalSpin?.status, luckyPetalOptOut, appliedCoupon, isApplyingCoupon, shippingInfo.email, cartState.subtotal, cartState.items.length]);
 
   useEffect(() => {
     const pendingCode = localStorage.getItem('blom_pending_course_offer');
@@ -1781,7 +1809,9 @@ export const CheckoutPage: React.FC = () => {
                             <p className="text-xs text-green-600">
                               {checkoutDiscountChoice.source === 'womens_day'
                                 ? `Women’s Day saves more, so your coupon will not be used.`
-                                : `Coupon saving: -${formatPrice(discount)}`}
+                                : luckyPetalGiftName
+                                  ? `Lucky Petal: free ${luckyPetalGiftName}`
+                                  : `Coupon saving: -${formatPrice(discount)}`}
                             </p>
                             {/* Debug info */}
                             {process.env.NODE_ENV === 'development' && (
@@ -1796,7 +1826,10 @@ export const CheckoutPage: React.FC = () => {
                           </div>
                           <button
                             type="button"
-                            onClick={handleRemoveCoupon}
+                            onClick={() => {
+                              if (isLuckyPetalCode(appliedCoupon.code)) setLuckyPetalOptOut(true);
+                              handleRemoveCoupon();
+                            }}
                             className="text-green-600 hover:text-green-800 text-sm font-medium"
                           >
                             Remove
@@ -1808,6 +1841,21 @@ export const CheckoutPage: React.FC = () => {
                       )}
                     </div>
                   </div>
+
+                  {luckyPetalSpin && (
+                    <LuckyPetalCheckoutNudge
+                      spin={luckyPetalSpin}
+                      subtotalCents={Math.round(cartState.subtotal * 100)}
+                      applied={isLuckyPetalApplied && appliedCoupon?.code === luckyPetalSpin.code}
+                      giftName={luckyPetalGiftName}
+                      busy={isApplyingCoupon}
+                      onUse={() => {
+                        setLuckyPetalOptOut(false);
+                        if (appliedCoupon) handleRemoveCoupon();
+                        void handleApplyCoupon(luckyPetalSpin.code);
+                      }}
+                    />
+                  )}
 
                   {womensDayPromotion.isLive && (
                     <div className={`rounded-xl border p-3 ${
@@ -1836,6 +1884,12 @@ export const CheckoutPage: React.FC = () => {
                       <span>Subtotal:</span>
                       <span>{formatPrice(cartState.subtotal)}</span>
                     </div>
+                    {luckyPetalGiftName && (
+                      <div className="flex justify-between text-sm text-[#E8538A]">
+                        <span>Lucky Petal gift: {luckyPetalGiftName}</span>
+                        <span className="font-medium">FREE</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span>{shippingMethod === 'own-courier' ? 'Packing & Handling:' : 'Shipping:'}</span>
                       <span className={shippingCost === 0 ? 'text-green-600 font-medium' : ''}>
@@ -1855,7 +1909,9 @@ export const CheckoutPage: React.FC = () => {
                         <span>
                           {checkoutDiscountChoice.source === 'womens_day'
                             ? 'Women’s Day Promotion:'
-                            : 'Coupon Discount:'}
+                            : isLuckyPetalApplied
+                              ? 'Lucky Petal:'
+                              : 'Coupon Discount:'}
                         </span>
                         <span>-{formatPrice(effectiveDiscount)}</span>
                       </div>

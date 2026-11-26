@@ -3,6 +3,7 @@ import { ArrowUpRight } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { Footer } from '../components/layout/Footer';
 import { HeroSlider } from '../components/sections/HeroSlider';
+import { LuckyPetalBanner } from '../components/luckyPetal/LuckyPetalBanner';
 import { FeaturedProducts } from '../components/sections/FeaturedProducts';
 import { TrustBadges } from '../components/sections/TrustBadges';
 import { ShopByCategory } from '../components/sections/ShopByCategory';
@@ -54,6 +55,7 @@ export const HomePage: React.FC = () => {
 
       <main>
         <HeroSlider />
+        <LuckyPetalBanner />
         <TrustBadges />
         <FeaturedProducts />
 

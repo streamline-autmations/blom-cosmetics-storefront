@@ -8,6 +8,7 @@ import { authService, AuthState } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { wishlistStore } from '../lib/wishlist';
 import { fetchMyOrders } from '../lib/fetchMyOrders';
+import { LuckyPetalAccountCard } from '../components/luckyPetal/LuckyPetalAccountCard';
 
 export default function AccountPageFullCore() {
   const [activeTab, setActiveTab] = useState<'profile' | 'orders' | 'wishlist' | 'settings'>('profile');
@@ -268,6 +269,7 @@ export default function AccountPageFullCore() {
 
             {/* Main content */}
             <section className="lg:col-span-3 space-y-8">
+              <LuckyPetalAccountCard />
               {activeTab === 'profile' && (
                 <div className="rounded-xl border p-6 bg-white">
                   <div className="mb-6">
