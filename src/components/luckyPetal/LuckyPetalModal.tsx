@@ -20,7 +20,6 @@ import {
   useLuckyPetalState,
 } from '../../lib/luckyPetalClient';
 
-const DISMISSED_KEY = (campaignId: string) => `blom_lucky_petal_dismissed:${campaignId}`;
 const AUTO_SESSION_KEY = 'blom_lucky_petal_auto_shown';
 const AUTO_DELAY_MS = 1500;
 const QUIET_PATHS = [/^\/checkout/, /^\/login/, /^\/signup/, /^\/auth/, /^\/reset-password/, /^\/order/, /^\/invoice/, /^\/lucky-petal/];
@@ -133,7 +132,6 @@ export const LuckyPetalHost: React.FC = () => {
     }
 
     if (state.my_spin || state.reason === 'spins_closed') return;
-    if (storage.get(localStorage, DISMISSED_KEY(state.campaign_id))) return;
     if (storage.get(sessionStorage, AUTO_SESSION_KEY)) return;
 
     const timer = window.setTimeout(() => {
@@ -152,10 +150,7 @@ export const LuckyPetalHost: React.FC = () => {
     <LuckyPetalModal
       state={state}
       onRefresh={refresh}
-      onClose={() => {
-        storage.set(localStorage, DISMISSED_KEY(state.campaign_id), '1');
-        setIsOpen(false);
-      }}
+      onClose={() => setIsOpen(false)}
     />
   );
 };
