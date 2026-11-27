@@ -141,6 +141,21 @@ export async function spinLuckyPetal(): Promise<SpinResult> {
   return { ok: true, alreadySpun: Boolean(data.already_spun), spin: data.spin as LuckyPetalSpin };
 }
 
+/** The Hand File prize, retired on 27 Nov 2026; its winners may swap it for 8% off. */
+export const LUCKY_PETAL_HAND_FILE_PRIZE_ID = 'de1eebae-eee2-48eb-8ca9-f06d3228f63b';
+
+/** Swap an unused Hand File prize for 8% off. One-way; the server checks everything. */
+export async function swapHandFileForDiscount(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data, error } = await supabase.rpc('lucky_petal_swap_gift_for_discount', {
+    p_campaign_id: LUCKY_PETAL_CAMPAIGN_ID,
+  });
+  if (error || !data?.ok) {
+    return { ok: false, error: 'We could not swap your prize. It may already be used, or the offer has ended.' };
+  }
+  await fetchLuckyPetalState(true);
+  return { ok: true };
+}
+
 /** Campaign state for the current visitor; refreshes when they log in or out. */
 export function useLuckyPetalState() {
   const [state, setState] = useState<LuckyPetalState>({ visible: false });
