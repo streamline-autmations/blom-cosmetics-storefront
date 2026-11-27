@@ -22,7 +22,7 @@ import {
 
 const AUTO_SESSION_KEY = 'blom_lucky_petal_auto_shown';
 const AUTO_DELAY_MS = 1500;
-const QUIET_PATHS = [/^\/checkout/, /^\/login/, /^\/signup/, /^\/auth/, /^\/reset-password/, /^\/order/, /^\/invoice/, /^\/lucky-petal/];
+const QUIET_PATHS = [/^\/checkout/, /^\/login/, /^\/signup/, /^\/auth/, /^\/reset-password/, /^\/account\/reset-password/, /^\/order/, /^\/invoice/, /^\/lucky-petal/];
 const LOGIN_REDIRECT = encodeURIComponent('/?spin=1');
 
 const usePrefersReducedMotion = () => {
