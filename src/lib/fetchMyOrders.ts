@@ -47,7 +47,17 @@ export async function fetchMyOrders(): Promise<Order[]> {
     .select(`${safeFields}, order_display`) // Request order_display ONLY from the view
     .order('created_at', { ascending: false });
 
-  if (user?.id) {
+  // Also show GUEST orders (no user_id) placed with this email before the account existed;
+  // never another account's order that merely lists this email.
+  // RLS decides what is readable; it only matches the signed-in user's own (verified) email.
+  const safeEmail = email?.replace(/["\\]/g, '');
+  const mine = user?.id && safeEmail
+    ? `user_id.eq.${user.id},and(user_id.is.null,buyer_email.eq."${safeEmail}")`
+    : null;
+
+  if (mine) {
+    q = q.or(mine);
+  } else if (user?.id) {
     q = q.eq('user_id', user.id);
   } else if (email) {
     q = q.eq('buyer_email', email);
@@ -64,7 +74,9 @@ export async function fetchMyOrders(): Promise<Order[]> {
       .select(safeFields) // Use ONLY safe fields (no order_display)
       .order('created_at', { ascending: false });
 
-    if (user?.id) {
+    if (mine) {
+      fallbackQuery = fallbackQuery.or(mine);
+    } else if (user?.id) {
       fallbackQuery = fallbackQuery.eq('user_id', user.id);
     } else if (email) {
       fallbackQuery = fallbackQuery.eq('buyer_email', email);

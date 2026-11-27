@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../lib/supabase';
 import { cartStore } from '../lib/cart';
+import { EmailCodeLogin } from '../components/auth/EmailCodeLogin';
 import { Download, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 
 export default function CheckoutSuccess() {
@@ -13,6 +14,11 @@ export default function CheckoutSuccess() {
   const [orderDetails, setOrderDetails] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isGuest, setIsGuest] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => setIsGuest(!session));
+  }, []);
 
   const checkStatus = useCallback(async (orderId: string) => {
     setStatus('checking');
@@ -210,6 +216,27 @@ export default function CheckoutSuccess() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Guest checkout: one step to an account, so next time they can log in and see this order */}
+            {status === 'paid' && isGuest && (
+              <Card>
+                <CardHeader>
+                  <h2 className="text-xl font-bold text-gray-900">Save your details for next time</h2>
+                  <p className="text-gray-600 mt-1">
+                    Create a free account to track this order and check out faster. No password needed:
+                    we'll email you a code.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <EmailCodeLogin
+                    redirectPath="/account"
+                    initialEmail={orderDetails?.buyer_email || orderDetails?.customer_email || ''}
+                    signupData={orderDetails?.buyer_name ? { name: String(orderDetails.buyer_name) } : undefined}
+                    sendLabel="Create my account"
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* ORDER DETAILS - Only show when paid */}
             {status === 'paid' && orderDetails && (

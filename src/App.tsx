@@ -35,7 +35,6 @@ const CheckoutCancel = lazy(() => import('./pages/CheckoutCancel'));
 const AuthResetPage = lazy(() => import('./pages/AuthResetPage').then(m => ({ default: m.AuthResetPage })));
 const TrackOrderPage = lazy(() => import('./pages/TrackOrderPage').then(m => ({ default: m.TrackOrderPage })));
 const InvoiceViewer = lazy(() => import('./pages/InvoiceViewer'));
-const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage').then(m => ({ default: m.ResetPasswordPage })));
 const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage').then(m => ({ default: m.AuthCallbackPage })));
 const ProductTemplateExample = lazy(() => import('./pages/ProductTemplateExample').then(m => ({ default: m.ProductTemplateExample })));
 const MyCoupons = lazy(() => import('./pages/MyCoupons'));
@@ -160,8 +159,8 @@ function App() {
           {/* Auth */}
           <Route path="/login" element={<PageWithCart><LoginPage /></PageWithCart>} />
           <Route path="/signup" element={<PageWithCart><SignupPage /></PageWithCart>} />
-          <Route path="/reset-password" element={<PageWithCart><ResetPasswordPage /></PageWithCart>} />
-          <Route path="/account/reset-password" element={<PageWithCart><ResetPasswordPage /></PageWithCart>} />
+          <Route path="/reset-password" element={<PageWithCart><AuthResetPage /></PageWithCart>} />
+          <Route path="/account/reset-password" element={<PageWithCart><AuthResetPage /></PageWithCart>} />
           <Route path="/auth/reset" element={<PageWithCart><AuthResetPage /></PageWithCart>} />
           <Route path="/auth/callback" element={<PageWithCart><AuthCallbackPage /></PageWithCart>} />
           

@@ -5,86 +5,51 @@ import { Container } from '../components/layout/Container';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../lib/supabase';
+import { safeRedirect } from '../lib/authRedirect';
+import { EmailCodeLogin } from '../components/auth/EmailCodeLogin';
 import { Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 
+/**
+ * Set a new password. Serves /auth/reset (old reset-email links) and /account/reset-password
+ * (after logging in with an email code). Works off the signed-in session: the Supabase client
+ * has already swapped the link's ?code= for a session by the time getSession() resolves.
+ */
 export const AuthResetPage: React.FC = () => {
-  const [formData, setFormData] = useState({
-    password: '',
-    confirmPassword: ''
-  });
+  const params = new URLSearchParams(window.location.search);
+  const nextPath = safeRedirect(params.get('next'));
+  const [phase, setPhase] = useState<'checking' | 'ready' | 'no-session'>('checking');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string }>({ type: null, message: '' });
-  const [isValidToken, setIsValidToken] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   useEffect(() => {
-    // Check if we have a valid password reset token in the URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-    
-    if (accessToken && refreshToken) {
-      setIsValidToken(true);
-    } else {
-      setStatus({ 
-        type: 'error', 
-        message: 'Invalid or expired password reset link. Please request a new password reset.' 
-      });
-    }
+    document.title = 'Set a New Password – BLOM Cosmetics';
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setAccountEmail(session?.user.email ?? '');
+      setPhase(session ? 'ready' : 'no-session');
+    });
   }, []);
-
-  const isFormValid = formData.password.length >= 6 && formData.password === formData.confirmPassword;
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Clear status when user starts typing
-    if (status.type) {
-      setStatus({ type: null, message: '' });
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!isFormValid || isSubmitting || !isValidToken) return;
-
+    if (password.length < 6 || isSubmitting) return;
     setIsSubmitting(true);
-    setStatus({ type: null, message: '' });
-
-    try {
-      const { error } = await supabase.auth.updateUser({ password: formData.password });
-      
-      if (error) {
-        setStatus({ 
-          type: 'error', 
-          message: error.message || 'Failed to update password. Please try again.' 
-        });
-        return;
-      }
-
-      setStatus({ 
-        type: 'success', 
-        message: 'Password updated successfully! Redirecting to your account...' 
-      });
-      
-      // Redirect to account page after successful password update
-      setTimeout(() => {
-        window.location.href = '/account';
-      }, 2000);
-    } catch (error: any) {
-      setStatus({ 
-        type: 'error', 
-        message: error.message || 'Failed to update password. Please try again.' 
-      });
-    } finally {
+    setStatus(null);
+    const { error } = await supabase.auth.updateUser({ password });
+    if (error && error.code !== 'same_password') {
       setIsSubmitting(false);
+      setStatus({
+        type: 'error',
+        message: error.code === 'weak_password'
+          ? 'Please choose a longer password, with letters and numbers.'
+          : error.message || 'Could not save your password. Please try again.',
+      });
+      return;
     }
+    setStatus({ type: 'success', message: 'Password saved. Taking you to your account…' });
+    setTimeout(() => { window.location.href = nextPath; }, 1200);
   };
 
   return (
@@ -94,138 +59,111 @@ export const AuthResetPage: React.FC = () => {
       <main className="section-padding">
         <Container>
           <div className="max-w-md mx-auto">
-            {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-4">Reset Password</h1>
+              <h1 className="text-4xl font-bold mb-4">
+                {phase === 'no-session' ? 'Let’s get you back in' : 'Set a New Password'}
+              </h1>
               <p className="text-xl text-gray-600">
-                Enter your new password below
+                {phase === 'no-session'
+                  ? 'This link has expired, or it opened in a different browser. Get a login code instead: it works anywhere.'
+                  : "You're logged in. Pick a new password, or skip this and keep using email codes."}
               </p>
             </div>
 
-            {/* Reset Password Form */}
             <Card>
               <CardHeader>
-                <h2 className="text-2xl font-bold text-center">Set New Password</h2>
+                <h2 className="text-2xl font-bold text-center">
+                  {phase === 'no-session' ? 'Log In' : 'New Password'}
+                </h2>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Password Field */}
-                  <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                      New Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="password"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        required
-                        className="input-field pr-12"
-                        placeholder="Enter new password"
-                        minLength={6}
-                      />
+                {phase === 'checking' && (
+                  <p className="text-center text-gray-600" role="status">One moment…</p>
+                )}
+
+                {phase === 'no-session' && (
+                  <EmailCodeLogin
+                    redirectPath={`/account/reset-password?next=${encodeURIComponent(nextPath)}`}
+                    sendLabel="Email me a code"
+                  />
+                )}
+
+                {phase === 'ready' && (
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Say whose password this is, in case the browser was already logged in as someone else. */}
+                    <p className="text-sm text-gray-700 break-words">
+                      Changing the password for <strong>{accountEmail}</strong>.{' '}
+                      Not you?{' '}
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                        onClick={async () => { await supabase.auth.signOut(); setPhase('no-session'); }}
+                        className="text-pink-700 hover:text-pink-800 font-medium underline"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        Log out
                       </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-1">Minimum 6 characters</p>
-                  </div>
-
-                  {/* Confirm Password Field */}
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      Confirm New Password *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        required
-                        className="input-field pr-12"
-                        placeholder="Confirm new password"
-                        minLength={6}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Password Match Indicator */}
-                  {formData.confirmPassword && (
-                    <div className={`text-sm flex items-center gap-2 ${
-                      formData.password === formData.confirmPassword && formData.password.length >= 6
-                        ? 'text-green-600'
-                        : 'text-red-600'
-                    }`}>
-                      {formData.password === formData.confirmPassword && formData.password.length >= 6 ? (
-                        <CheckCircle className="h-4 w-4" />
-                      ) : (
-                        <AlertCircle className="h-4 w-4" />
-                      )}
-                      {formData.password === formData.confirmPassword && formData.password.length >= 6
-                        ? 'Passwords match'
-                        : 'Passwords do not match'}
-                    </div>
-                  )}
-
-                  {/* Status Message */}
-                  {status.type && (
-                    <div 
-                      className={`p-4 rounded-lg flex items-center gap-2 ${
-                        status.type === 'error' 
-                          ? 'bg-red-50 text-red-700 border border-red-200' 
-                          : 'bg-green-50 text-green-700 border border-green-200'
-                      }`}
-                    >
-                      {status.type === 'error' ? (
-                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                      ) : (
-                        <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                      )}
-                      <span>{status.message}</span>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    disabled={!isFormValid || isSubmitting || !isValidToken}
-                    className="w-full bg-pink-400 hover:bg-pink-500 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Updating Password...
+                    </p>
+                    <div>
+                      <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                        New password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          id="password"
+                          name="password"
+                          value={password}
+                          onChange={(e) => { setPassword(e.target.value); setStatus(null); }}
+                          required
+                          minLength={6}
+                          autoComplete="new-password"
+                          className="input-field pr-12"
+                          placeholder="At least 6 characters"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700"
+                          aria-pressed={showPassword}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
                       </div>
-                    ) : (
-                      'Update Password'
-                    )}
-                  </Button>
-                </form>
+                    </div>
 
-                {/* Help Text */}
-                <div className="mt-6 text-center">
-                  <p className="text-sm text-gray-600">
-                    Remember your password?{' '}
-                    <a href="/login" className="text-pink-400 hover:text-pink-500 font-medium">
-                      Sign in here
-                    </a>
-                  </p>
-                </div>
+                    {status && (
+                      <div
+                        className={`p-4 rounded-lg flex items-start gap-2 ${
+                          status.type === 'error'
+                            ? 'bg-red-50 text-red-700 border border-red-200'
+                            : 'bg-green-50 text-green-800 border border-green-200'
+                        }`}
+                        role={status.type === 'error' ? 'alert' : 'status'}
+                      >
+                        {status.type === 'error'
+                          ? <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                          : <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" aria-hidden="true" />}
+                        <span className="min-w-0 break-words">{status.message}</span>
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={password.length < 6 || isSubmitting}
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting ? 'Saving…' : 'Save password'}
+                    </Button>
+
+                    <p className="text-center">
+                      <a href={nextPath} className="text-sm text-gray-700 hover:text-gray-900 underline">
+                        Skip for now
+                      </a>
+                    </p>
+                  </form>
+                )}
               </CardContent>
             </Card>
           </div>

@@ -5,103 +5,65 @@ import { Container } from '../components/layout/Container';
 import { Card, CardContent, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { supabase } from '../lib/supabase';
-import { Mail, Lock, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { safeRedirect } from '../lib/authRedirect';
+import { EmailCodeLogin } from '../components/auth/EmailCodeLogin';
+import { EmailField } from '../components/auth/EmailField';
+import { Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+type Mode = 'code' | 'password' | 'forgot';
 
 export const LoginPage: React.FC = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    remember: false
-  });
+  const params = new URLSearchParams(window.location.search);
+  const redirectPath = safeRedirect(params.get('redirect'));
+  const signupHref = `/signup?redirect=${encodeURIComponent(redirectPath)}`;
+
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'password' ? 'password' : 'code');
+  const [email, setEmail] = useState(params.get('email') || '');
+  const [autoSend, setAutoSend] = useState(false);
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [status, setStatus] = useState<{ type: 'error' | 'success' | null; message: string }>({
-    type: null,
-    message: ''
-  });
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [problem, setProblem] = useState<null | 'wrong' | 'unconfirmed' | { message: string }>(null);
 
   useEffect(() => {
-    document.title = 'Login – BLOM Cosmetics';
+    document.title = 'Log In – BLOM Cosmetics';
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
       metaDescription.setAttribute('content', 'Log in to your BLOM Cosmetics account to view orders and manage your profile.');
     }
     window.scrollTo({ top: 0 });
-
-    // Check if user is already logged in
-    // Temporarily disable auth redirect while testing
-    // const authState = authService.getState();
-    // if (authState.user && !authState.loading) {
-    //   window.location.href = '/account';
-    // }
   }, []);
 
+  // Already signed in (e.g. came back from an email link): skip the form.
   useEffect(() => {
-    // Validate form
-    const isValid = formData.email.includes('@') && 
-                   formData.email.includes('.') && 
-                   formData.password.length >= 6;
-    setIsFormValid(isValid);
-  }, [formData]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) window.location.href = redirectPath;
+    });
+  }, [redirectPath]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-    
-    // Clear status when user starts typing
-    if (status.type) {
-      setStatus({ type: null, message: '' });
-    }
+  const switchToCode = (next: Mode, send: boolean) => {
+    setProblem(null);
+    setAutoSend(send);
+    setMode(next);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!isFormValid || isSubmitting) return;
-
+    if (isSubmitting) return;
     setIsSubmitting(true);
-    setStatus({ type: null, message: '' });
-    const { error } = await supabase.auth.signInWithPassword({
-      email: formData.email,
-      password: formData.password
-    });
-
+    setProblem(null);
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
-      setStatus({ type: 'error', message: error.message });
       setIsSubmitting(false);
+      if (error.code === 'invalid_credentials') setProblem('wrong');
+      else if (error.code === 'email_not_confirmed') setProblem('unconfirmed');
+      else setProblem({ message: error.message });
       return;
     }
-
-    setStatus({ type: 'success', message: 'Log in successful! Redirecting…' });
-    setIsSubmitting(false);
-    // Respect redirect query if present (e.g. /login?redirect=/account)
-    const params = new URLSearchParams(window.location.search);
-    const next = params.get('redirect') || '/account';
-    setTimeout(() => { window.location.href = next; }, 300);
+    window.location.href = redirectPath;
   };
 
-  const handleForgotPassword = async () => {
-    if (!formData.email) {
-      setStatus({ 
-        type: 'error', 
-        message: 'Please enter your email address first.' 
-      });
-      return;
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-      redirectTo: `${window.location.origin}/auth/reset`
-    });
-    if (error) {
-      setStatus({ type: 'error', message: error.message });
-    } else {
-      setStatus({ type: 'success', message: 'Password reset email sent! Check your inbox.' });
-    }
-  };
+  const emailLooksValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -110,156 +72,145 @@ export const LoginPage: React.FC = () => {
       <main className="section-padding">
         <Container>
           <div className="max-w-md mx-auto">
-            {/* Header */}
             <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-4">Welcome Back</h1>
+              <h1 className="text-4xl font-bold mb-4">
+                {mode === 'forgot' ? 'Forgot your password?' : 'Welcome Back'}
+              </h1>
               <p className="text-xl text-gray-600">
-                Log in to manage your orders and account
+                {mode === 'forgot'
+                  ? "No problem. We'll email you a code to log in, then you can pick a new password."
+                  : 'Log in to manage your orders and account'}
               </p>
             </div>
 
-            {/* Login Form */}
             <Card>
               <CardHeader>
                 <h2 className="text-2xl font-bold text-center">Log In</h2>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Email Field */}
-                  <div>
-                    <label htmlFor="loginEmail" className="block text-sm font-medium text-gray-700 mb-2">
-                      Email Address *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type="email"
-                        id="loginEmail"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        className="input-field pl-12"
-                        placeholder="your@email.com"
-                        autoComplete="email"
-                      />
-                    </div>
-                  </div>
 
-                  {/* Password Field */}
-                  <div>
-                    <label htmlFor="loginPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                      Password *
-                    </label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        id="loginPassword"
-                        name="password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        required
-                        className="input-field pl-12 pr-12"
-                        placeholder="Enter your password"
-                        autoComplete="current-password"
-                      />
+                {mode === 'password' ? (
+                  <form onSubmit={handlePasswordLogin} className="space-y-6 mt-4">
+                    <EmailField id="loginEmail" value={email} onChange={(v) => { setEmail(v); setProblem(null); }} />
+
+                    <div>
+                      <label htmlFor="loginPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" aria-hidden="true" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          id="loginPassword"
+                          name="password"
+                          value={password}
+                          onChange={(e) => { setPassword(e.target.value); setProblem(null); }}
+                          required
+                          className="input-field pl-12 pr-12"
+                          placeholder="Enter your password"
+                          autoComplete="current-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
+                          aria-pressed={showPassword}
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                        </button>
+                      </div>
+                      <div className="mt-2 text-right">
+                        <button
+                          type="button"
+                          onClick={() => switchToCode('forgot', emailLooksValid)}
+                          className="text-sm text-pink-700 hover:text-pink-800 font-medium"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                    </div>
+
+                    {problem && (
+                      <div className="p-4 rounded-lg bg-red-50 text-red-700 border border-red-200 space-y-3" role="alert">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
+                          <span>
+                            {problem === 'wrong'
+                              ? "That email and password don't match. If you've forgotten your password, or you've only ever checked out as a guest, log in with an email code instead."
+                              : problem === 'unconfirmed'
+                                ? "Your email isn't confirmed yet. We'll email you a code: entering it confirms your email and logs you in."
+                                : problem.message}
+                          </span>
+                        </div>
+                        {problem !== 'wrong' && problem !== 'unconfirmed' ? null : (
+                          <Button type="button" variant="outline" className="w-full" onClick={() => switchToCode('code', true)}>
+                            Email me a login code
+                          </Button>
+                        )}
+                      </div>
+                    )}
+
+                    <Button
+                      type="submit"
+                      className="w-full"
+                      size="lg"
+                      disabled={!emailLooksValid || !password || isSubmitting}
+                      loading={isSubmitting}
+                    >
+                      {isSubmitting ? 'Logging in…' : 'Log in'}
+                    </Button>
+
+                    <p className="text-center text-sm">
                       <button
                         type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 rounded"
-                        aria-pressed={showPassword}
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        onClick={() => switchToCode('code', false)}
+                        className="text-pink-700 hover:text-pink-800 font-medium"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <Eye className="h-5 w-5 text-gray-400" />
-                        )}
+                        Log in with an email code instead
                       </button>
-                    </div>
+                    </p>
+                  </form>
+                ) : (
+                  <div className="mt-4 space-y-6">
+                    <EmailCodeLogin
+                      // Remount so a mode switch can auto-send with the email typed so far.
+                      key={`${mode}-${autoSend}`}
+                      redirectPath={mode === 'forgot'
+                        ? `/account/reset-password?next=${encodeURIComponent(redirectPath)}`
+                        : redirectPath}
+                      initialEmail={email}
+                      onEmailChange={setEmail}
+                      autoSend={autoSend}
+                      sendLabel={mode === 'forgot' ? 'Email me a code' : 'Email me a login code'}
+                    />
+                    <p className="text-center text-sm">
+                      <button
+                        type="button"
+                        onClick={() => { setProblem(null); setMode('password'); }}
+                        className="text-pink-700 hover:text-pink-800 font-medium"
+                      >
+                        {mode === 'forgot' ? 'Back to password log in' : 'Log in with my password instead'}
+                      </button>
+                    </p>
                   </div>
+                )}
 
-                  {/* Remember Me & Forgot Password */}
-                  <div className="flex items-center justify-between">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="loginRemember"
-                        name="remember"
-                        checked={formData.remember}
-                        onChange={handleInputChange}
-                        className="rounded border-gray-300 text-pink-400 focus:ring-pink-300"
-                      />
-                      <span className="text-sm text-gray-600">Remember me</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleForgotPassword}
-                      className="text-sm text-pink-400 hover:text-pink-500 transition-colors"
-                    >
-                      Forgot password?
-                    </button>
-                  </div>
-
-                  {/* Status Message */}
-                  {status.type && (
-                    <div 
-                      id="loginStatus" 
-                      className={`form-status p-4 rounded-lg flex items-center gap-2 ${
-                        status.type === 'error' 
-                          ? 'bg-red-50 text-red-700 border border-red-200' 
-                          : 'bg-green-50 text-green-700 border border-green-200'
-                      }`}
-                      aria-live="polite"
-                    >
-                      {status.type === 'error' ? (
-                        <AlertCircle className="h-5 w-5 flex-shrink-0" />
-                      ) : (
-                        <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                      )}
-                      <span>{status.message}</span>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    id="loginSubmit"
-                    className="w-full"
-                    size="lg"
-                    disabled={!isFormValid || isSubmitting}
-                    loading={isSubmitting}
-                  >
-                    {isSubmitting ? 'Signing In...' : 'Sign In'}
-                  </Button>
-                </form>
-
-                {/* Sign Up Link */}
                 <div className="mt-6 text-center">
                   <p className="text-gray-600">
                     Don't have an account?{' '}
-                    <a 
-                      href="/signup" 
-                      className="text-pink-400 hover:text-pink-500 font-medium transition-colors"
-                    >
+                    <a href={signupHref} className="text-pink-700 hover:text-pink-800 font-medium transition-colors">
                       Create account
                     </a>
                   </p>
                 </div>
 
-                {/* Legal Text */}
                 <div className="mt-6 text-center">
                   <p className="text-xs text-gray-500">
                     By continuing, you agree to our{' '}
-                    <a href="/terms" className="text-pink-400 hover:text-pink-500 transition-colors">
-                      Terms
-                    </a>{' '}
+                    <a href="/terms" className="text-pink-700 hover:text-pink-800 transition-colors">Terms</a>{' '}
                     and acknowledge our{' '}
-                    <a href="/privacy" className="text-pink-400 hover:text-pink-500 transition-colors">
-                      Privacy Policy
-                    </a>
-                    .
+                    <a href="/privacy" className="text-pink-700 hover:text-pink-800 transition-colors">Privacy Policy</a>.
                   </p>
                 </div>
               </CardContent>
